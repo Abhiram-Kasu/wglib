@@ -1,5 +1,5 @@
 struct VertexInput {
-    @location(0) position: vec3<f32>,
+    @location(0) position: vec2<f32>,
     @location(1) color: vec3<f32>,
 }
 
@@ -21,7 +21,12 @@ struct Uniforms {
 @vertex
 fn vertexMain(model: VertexInput) -> VertexOutput {
     var output: VertexOutput;
-    output.position = vec4f(model.position.xy / uniforms.dimensions.xy ,0.0, 1.0);
+    // Convert from screen space (0,0 at top-left) to NDC (-1,-1 at bottom-left, 1,1 at top-right)
+    // Screen space: x: [0, width], y: [0, height]
+    // NDC: x: [-1, 1], y: [-1, 1]
+    let ndc_x = (model.position.x / uniforms.dimensions.x) * 2.0 - 1.0;
+    let ndc_y = 1.0 - (model.position.y / uniforms.dimensions.y) * 2.0;
+    output.position = vec4f(ndc_x, ndc_y, 0.0, 1.0);
     output.color = model.color;
     return output;
 

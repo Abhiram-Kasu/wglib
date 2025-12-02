@@ -12,6 +12,12 @@ struct VertexOutput {
 
 ;
 
+struct Uniforms {
+    @location(0) dimensions: vec2<f32>,
+}
+
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+
 @vertex
 fn vertexMain(model: VertexInput) -> VertexOutput {
     var output: VertexOutput;

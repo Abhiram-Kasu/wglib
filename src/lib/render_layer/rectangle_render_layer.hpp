@@ -27,8 +27,8 @@ private:
 public:
   RectangleRenderLayer(glm::vec2 position, glm::vec2 size, glm::vec3 color);
 
-  auto initRes(const wgpu::Device &device, wgpu::TextureFormat format)
-      -> void override;
+  auto initRes(const wgpu::Device &device, wgpu::TextureFormat format,
+               const wgpu::BindGroupLayout &bindGroupLayout) -> void override;
 
   auto Render(wgpu::RenderPassEncoder &) -> void override;
 

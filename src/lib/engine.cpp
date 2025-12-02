@@ -60,8 +60,8 @@ Engine::Engine(glm::vec2 size, std::string_view title) : m_window_size(size) {
 
   // Pass to Renderer
 
-  this->m_renderer = std::make_unique<Renderer>(m_instance, m_adapter, m_device,
-                                                m_window_manager->format());
+  this->m_renderer = std::make_unique<Renderer>(
+      m_instance, m_adapter, m_device, m_window_manager->format(), size);
 }
 
 auto Engine::Start() -> void {
@@ -71,10 +71,6 @@ auto Engine::Start() -> void {
   while (!glfwWindowShouldClose(m_window_manager->window())) {
     glfwPollEvents();
     render();
-    if (m_window_manager->surface().Present().status != wgpu::Status::Success) {
-      std::cout << "Failed to present" << std::endl;
-      exit(0);
-    }
     m_instance.ProcessEvents();
   }
 #endif

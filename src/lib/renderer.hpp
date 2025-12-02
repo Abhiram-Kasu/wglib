@@ -2,9 +2,15 @@
 #include <memory>
 #include <webgpu/webgpu_cpp.h>
 
+#include "glm/ext/vector_float2.hpp"
 #include "render_layer/render_layer.hpp"
 
 namespace wglib {
+
+struct Uniforms {
+  glm::vec2 screen_size;
+};
+
 template <typename T>
 concept RenderableLayer = std::derived_from<T, render_layers::RenderLayer>;
 
@@ -17,15 +23,23 @@ private:
 
   std::vector<std::unique_ptr<render_layers::RenderLayer>> m_render_layers{};
 
+  Uniforms m_uniforms;
+  wgpu::Buffer m_uniform_buffer;
+  wgpu::BindGroupLayout m_bind_group_layout;
+
+  auto updateUniformBuffer() -> void;
+  auto createBindGroupLayout() -> void;
+
 public:
   Renderer(const wgpu::Instance &instance, wgpu::Adapter &adapter,
-           wgpu::Device &device, wgpu::TextureFormat format);
+           wgpu::Device &device, wgpu::TextureFormat format,
+           glm::vec2 screenSize);
 
   template <RenderableLayer L, typename... T>
     requires std::constructible_from<L, T...>
   auto pushRenderLayer(T &&...args) {
     auto ptr = std::make_unique<L>(std::forward<T>(args)...);
-    ptr->initRes(m_device, m_format);
+    ptr->initRes(m_device, m_format, m_bind_group_layout);
     m_render_layers.push_back(std::move(ptr));
   }
 

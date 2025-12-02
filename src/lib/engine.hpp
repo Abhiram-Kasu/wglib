@@ -10,9 +10,6 @@
 
 namespace wglib {
 
-struct Uniforms {
-  glm::vec2 dimensions;
-};
 class Engine {
 private:
   std::unique_ptr<WindowManager> m_window_manager;

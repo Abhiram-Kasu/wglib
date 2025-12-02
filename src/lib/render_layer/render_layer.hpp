@@ -14,7 +14,8 @@ public:
 
   virtual auto Render(wgpu::RenderPassEncoder &encoder) -> void = 0;
 
-  virtual auto initRes(const wgpu::Device &device, wgpu::TextureFormat format)
+  virtual auto initRes(const wgpu::Device &device, wgpu::TextureFormat format,
+                       const wgpu::BindGroupLayout &bindGroupLayout)
       -> void = 0;
 
   virtual ~RenderLayer();

@@ -235,9 +235,10 @@ void Start() {
 int main() {
     wglib::Engine engine({500, 500}, "title");
 
+    engine.Draw<wglib::render_layers::RectangleRenderLayer>(
+        glm::vec2{0, 0}, glm::vec2{100, 100}, glm::vec3{1.0f, 0.0f, 0.0f});
 
-    engine.Draw<wglib::render_layers::RectangleRenderLayer>(glm::vec2{500, 500}, glm::vec2{100, 100},
-                                                            glm::vec3{1.0f, 0.0f, 0.0f});
-    Init();
-    Start();
+    engine.Start();
+    // Init();
+    // Start();
 }

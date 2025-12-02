@@ -21,7 +21,7 @@ struct Uniforms {
 @vertex
 fn vertexMain(model: VertexInput) -> VertexOutput {
     var output: VertexOutput;
-    output.position = vec4f(model.position, 1.0);
+    output.position = vec4f(model.position.xy / uniforms.dimensions.xy ,0.0, 1.0);
     output.color = model.color;
     return output;
 

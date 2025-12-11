@@ -5,7 +5,8 @@
 
 #include "lib/render_layer/rectangle_render_layer.hpp"
 
-int main() {
+int main()
+{
     wglib::Engine engine({500, 500}, "title");
 
     // engine.Draw<wglib::render_layers::RectangleRenderLayer>(
@@ -14,19 +15,18 @@ int main() {
     //     glm::vec2{50, 50}, glm::vec2{100, 100}, glm::vec3{1.0f, 1.0f, 0.0f});
     // engine.Draw<wglib::render_layers::RectangleRenderLayer>(
     //     glm::vec2{-500, 0}, glm::vec2{500, 500}, glm::vec3{1.0f, 1.0f, 1.0f});
-
     wglib::render_layers::RectangleRenderLayer rect1(
         glm::vec2{0, 0}, glm::vec2{100, 100}, glm::vec3{0.0f, 1.0f, 0.0f});
-
-
-    engine.OnUpdate([&](double s) {
+    engine.OnUpdate([&](const double s) {
         std::cout << "Update function: " << s << std::endl;
         engine.Draw(rect1);
         static auto velocity = glm::vec2{50};
-        if (rect1.getPosition().x + rect1.getSize().x > 500 or rect1.getPosition().x < 0) {
+        if (rect1.getPosition().x + rect1.getSize().x > 500 or rect1.getPosition().x < 0)
+        {
             velocity.x *= -1;
         }
-        if (rect1.getPosition().y + rect1.getSize().y > 500 or rect1.getPosition().y < 0) {
+        if (rect1.getPosition().y + rect1.getSize().y > 500 or rect1.getPosition().y < 0)
+        {
             velocity.y *= -1;
         }
 

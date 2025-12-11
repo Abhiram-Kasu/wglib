@@ -7,17 +7,19 @@
 
 #include <webgpu/webgpu_cpp.h>
 
-namespace wglib::render_layers {
-class RenderLayer {
+namespace wglib::render_layers
+{
+class RenderLayer
+{
 public:
-  RenderLayer() = default;
+    RenderLayer() = default;
 
-  virtual auto Render(wgpu::RenderPassEncoder &encoder) const -> void = 0;
+    virtual auto Render(wgpu::RenderPassEncoder &encoder) const -> void = 0;
 
-  virtual auto initRes(const wgpu::Device &device, wgpu::TextureFormat format,
-                       const wgpu::BindGroupLayout &bindGroupLayout)
-      -> void = 0;
+    virtual auto initRes(const wgpu::Device &device, wgpu::TextureFormat format,
+                         const wgpu::BindGroupLayout &bindGroupLayout)
+        -> void = 0;
 
-  virtual ~RenderLayer();
+    virtual ~RenderLayer();
 };
 } // namespace wglib::render_layers

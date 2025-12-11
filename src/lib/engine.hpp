@@ -10,8 +10,10 @@
 #include "glm/vec2.hpp"
 #include "renderer.hpp"
 
-namespace wglib {
-  class Engine {
+namespace wglib
+{
+class Engine
+{
     std::unique_ptr<WindowManager> m_window_manager;
     wgpu::Instance m_instance;
     wgpu::Device m_device;
@@ -23,20 +25,22 @@ namespace wglib {
 
     auto render() -> void;
 
-  public:
+public:
     Engine(glm::vec2 size, std::string_view title);
 
     ~Engine();
 
     auto Start() -> void;
 
-    auto OnUpdate(std::function<void(float)> &&function) -> void {
-      m_update_function = function;
+    auto OnUpdate(std::function<void(float)> &&function) -> void
+    {
+        m_update_function = function;
     }
 
     auto Draw(std::derived_from<render_layers::RenderLayer> auto &renderLayer)
-      -> void {
-      m_renderer->pushRenderLayer(renderLayer);
+        -> void
+    {
+        m_renderer->pushRenderLayer(renderLayer);
     }
-  };
+};
 } // namespace wglib

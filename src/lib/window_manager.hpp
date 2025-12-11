@@ -6,9 +6,11 @@
 
 #include "GLFW/glfw3.h"
 
-namespace wglib {
-  class WindowManager {
-  private:
+namespace wglib
+{
+class WindowManager
+{
+private:
     uint32_t m_width, m_height;
     std::string_view m_title;
     GLFWwindow *m_window;
@@ -17,7 +19,7 @@ namespace wglib {
 
     auto configureSurface(wgpu::Device &device, wgpu::Adapter &adapter) -> void;
 
-  public:
+public:
     WindowManager(uint32_t width, uint32_t height, std::string_view title, wgpu::Instance &instance,
                   wgpu::Device &device, wgpu::Adapter &adapter);
 
@@ -32,5 +34,5 @@ namespace wglib {
     auto window() const -> GLFWwindow *;
 
     auto format() const -> wgpu::TextureFormat;
-  };
+};
 } // namespace wglib

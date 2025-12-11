@@ -1,5 +1,7 @@
 #pragma once
+#include "lib/render_layer/render_layer.hpp"
 #include "window_manager.hpp"
+#include <concepts>
 #include <cstdint>
 #include <memory>
 #include <string_view>
@@ -16,15 +18,13 @@ namespace wglib {
     wgpu::Adapter m_adapter;
     glm::vec2 m_window_size;
     std::unique_ptr<Renderer> m_renderer;
-    std::function<void(float)> m_update_function;
-    float m_last_frame_time{0.0f};
-
+    std::function<void(double)> m_update_function;
+    double m_last_frame_time{0.0f};
 
     auto render() -> void;
 
   public:
     Engine(glm::vec2 size, std::string_view title);
-
 
     ~Engine();
 
@@ -34,11 +34,9 @@ namespace wglib {
       m_update_function = function;
     }
 
-
-    template<typename L, typename... Args>
-      requires std::constructible_from<L, Args...>
-    auto Draw(Args &&... args) -> void {
-      m_renderer->pushRenderLayer<L>(std::forward<Args>(args)...);
+    auto Draw(std::derived_from<render_layers::RenderLayer> auto &renderLayer)
+      -> void {
+      m_renderer->pushRenderLayer(renderLayer);
     }
   };
 } // namespace wglib

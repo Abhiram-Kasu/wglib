@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <memory>
 #include <webgpu/webgpu_cpp.h>
 
@@ -21,7 +22,8 @@ private:
   const wgpu::Device &m_device;
   const wgpu::TextureFormat m_format;
 
-  std::vector<std::unique_ptr<render_layers::RenderLayer>> m_render_layers{};
+  std::vector<std::reference_wrapper<const render_layers::RenderLayer>>
+      m_render_layers{};
 
   Uniforms m_uniforms;
   wgpu::Buffer m_uniform_buffer;
@@ -35,13 +37,7 @@ public:
            wgpu::Device &device, wgpu::TextureFormat format,
            glm::vec2 screenSize);
 
-  template <RenderableLayer L, typename... T>
-    requires std::constructible_from<L, T...>
-  auto pushRenderLayer(T &&...args) {
-    auto ptr = std::make_unique<L>(std::forward<T>(args)...);
-    ptr->initRes(m_device, m_format, m_bind_group_layout);
-    m_render_layers.push_back(std::move(ptr));
-  }
+  auto pushRenderLayer(render_layers::RenderLayer &renderLayer) -> void;
 
   auto Render(wgpu::SurfaceTexture &) -> void;
 

@@ -65,18 +65,19 @@ namespace wglib {
       m_instance, m_adapter, m_device, m_window_manager->format(), size);
   }
 
-
   auto Engine::Start() -> void {
 #if defined(__EMSCRIPTEN__)
     emscripten_set_main_loop(render, 0, false);
 #else
     while (!glfwWindowShouldClose(m_window_manager->window())) {
-      m_last_frame_time = glfwGetTime() - m_last_frame_time;
+      const auto currTime = glfwGetTime();
+      const auto delta = currTime - m_last_frame_time;
+      m_last_frame_time = currTime;
       glfwPollEvents();
       render();
       m_instance.ProcessEvents();
       if (m_update_function) {
-        m_update_function(m_last_frame_time);
+        m_update_function(delta);
       }
     }
 #endif
@@ -88,7 +89,6 @@ namespace wglib {
     m_renderer->Render(surfaceTexture);
     m_window_manager->surface().Present();
   }
-
 
   Engine::~Engine() {
   }

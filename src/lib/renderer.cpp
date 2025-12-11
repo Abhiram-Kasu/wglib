@@ -77,15 +77,23 @@ namespace wglib {
     auto m_bind_group = m_device.CreateBindGroup(&desc);
     renderPass.SetBindGroup(0, m_bind_group, 0, 0);
     for (auto &layer: m_render_layers) {
-      layer->Render(renderPass);
+      layer.get().Render(renderPass);
     }
 
     renderPass.End();
     const auto encoderFinish = encoder.Finish();
 
     m_device.GetQueue().Submit(1, &encoderFinish);
+    // clear render queue
+    m_render_layers.clear();
   }
 
-  Renderer::~Renderer() {
+  auto Renderer::pushRenderLayer(render_layers::RenderLayer &renderLayer)
+    -> void {
+    renderLayer.initRes(m_device, m_format, m_bind_group_layout);
+    std::reference_wrapper renderLayerRef{renderLayer};
+    m_render_layers.emplace_back(renderLayerRef);
   }
+
+  Renderer::~Renderer() = default;
 } // namespace wglib

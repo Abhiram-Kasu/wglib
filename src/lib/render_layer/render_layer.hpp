@@ -9,17 +9,19 @@
 
 namespace wglib::render_layers
 {
-class RenderLayer
-{
-public:
-    RenderLayer() = default;
+    class RenderLayer
+    {
+    public:
+        RenderLayer() = default;
 
-    virtual auto Render(wgpu::RenderPassEncoder &encoder) const -> void = 0;
+        virtual auto Render(wgpu::RenderPassEncoder& renderPassEncoder) const -> void = 0;
 
-    virtual auto initRes(const wgpu::Device &device, wgpu::TextureFormat format,
-                         const wgpu::BindGroupLayout &bindGroupLayout)
-        -> void = 0;
+        virtual auto initRes(const wgpu::Device& device, wgpu::TextureFormat format,
+                             const wgpu::BindGroupLayout& bindGroupLayout)
+            -> void = 0;
 
-    virtual ~RenderLayer();
-};
+        virtual auto UpdateRes(wgpu::CommandEncoder& commandEncoder) const -> void = 0;
+
+        virtual ~RenderLayer();
+    };
 } // namespace wglib::render_layers

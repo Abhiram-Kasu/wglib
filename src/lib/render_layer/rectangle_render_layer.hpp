@@ -10,41 +10,48 @@
 
 namespace wglib::render_layers
 {
-class RectangleRenderLayer : public RenderLayer
-{
-private:
-    static std::optional<wgpu::RenderPipeline> m_render_pipeline;
+    class RectangleRenderLayer : public RenderLayer
+    {
+    private:
+        static std::optional<wgpu::RenderPipeline> m_render_pipeline;
 
-    glm::vec2 m_size;
-    glm::vec2 m_position;
-    glm::vec3 m_color;
+        glm::vec2 m_size;
+        glm::vec2 m_position;
+        glm::vec3 m_color;
 
-    wgpu::Buffer m_vertex_buffer;
-    wgpu::Buffer m_index_buffer;
+        wgpu::Buffer m_vertex_buffer;
+        bool m_vertex_buffer_dirty{false};
+        wgpu::Buffer m_index_buffer;
 
-    Vertex m_vertices[6];
+        Vertex m_vertices[6];
 
-    auto setVertices() -> void;
+        bool isInitialized{false};
 
-    static auto initRenderPipeline(const wgpu::Device &, wgpu::TextureFormat,
-                                   const wgpu::BindGroupLayout &) -> void;
+        auto calculateVertices() -> void;
 
-public:
-    RectangleRenderLayer(glm::vec2 position, glm::vec2 size, glm::vec3 color);
+        auto updateVertexBuffer() -> void;
 
-    auto initRes(const wgpu::Device &device, wgpu::TextureFormat format,
-                 const wgpu::BindGroupLayout &bindGroupLayout) -> void override;
+        static auto initRenderPipeline(const wgpu::Device&, wgpu::TextureFormat,
+                                       const wgpu::BindGroupLayout&) -> void;
 
-    auto Render(wgpu::RenderPassEncoder &) const -> void override;
+    public:
+        RectangleRenderLayer(glm::vec2 position, glm::vec2 size, glm::vec3 color);
 
-    auto getPosition() const -> glm::vec2;
+        auto initRes(const wgpu::Device& device, wgpu::TextureFormat format,
+                     const wgpu::BindGroupLayout& bindGroupLayout) -> void override;
 
-    auto setPosition(glm::vec2 pos) -> void;
+        auto Render(wgpu::RenderPassEncoder& renderPassEncoder) const -> void override;
 
-    auto getSize() const -> glm::vec2;
+        auto UpdateRes(wgpu::CommandEncoder& commandEncoder) const -> void override;
 
-    auto setSize(glm::vec2 size) -> void;
+        auto getPosition() const -> glm::vec2;
 
-    ~RectangleRenderLayer() override;
-};
+        auto setPosition(glm::vec2 pos) -> void;
+
+        auto getSize() const -> glm::vec2;
+
+        auto setSize(glm::vec2 size) -> void;
+
+        ~RectangleRenderLayer() override;
+    };
 } // namespace wglib::render_layers

@@ -199,9 +199,6 @@ auto CircleRenderLayer::calculateVertices() -> void {
     m_indices.push_back(p1_index);
     m_indices.push_back(p2_index);
   }
-  // TODO remove
-
-  std::println("{}", m_indices);
 }
 
 auto CircleRenderLayer::getOrigin() const -> glm::vec2 { return m_origin; }

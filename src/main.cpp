@@ -21,8 +21,8 @@ int main() {
   wglib::render_layers::RectangleRenderLayer rect1(
       glm::vec2{0, 0}, glm::vec2{100, 100}, glm::vec3{0.0f, 1.0f, 0.0f});
 
-  wglib::render_layers::CircleRenderLayer circle(glm::vec2{250, 250}, 50.0f,
-                                                 glm::vec3{0.0f, 0.0f, 1.0f});
+  wglib::render_layers::CircleRenderLayer circle(
+      glm::vec2{250, 250}, 50.0f, glm::vec3{0.0f, 0.0f, 1.0f}, 10);
 
   engine.OnUpdate([&](const double s) {
     engine.Draw(rect1);
@@ -43,6 +43,13 @@ int main() {
     if (radius <= 10)
       radius = 100;
     circle.setRadius(radius);
+
+    static auto frameCounter{0};
+    auto resolution = frameCounter % 20 == 0 ? circle.getResolution() + 1
+                                             : circle.getResolution();
+    if (resolution >= 300)
+      resolution = wglib::render_layers::CircleRenderLayer::default_resolution;
+    circle.setResolution(static_cast<uint32_t>(resolution));
   });
 
   engine.Start();

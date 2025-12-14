@@ -7,49 +7,58 @@
 #include "render_layer.hpp"
 #include "webgpu/webgpu_cpp.h"
 
-namespace wglib::render_layers
-{
-class CircleRenderLayer : public render_layers::RenderLayer
-{
-  private:
-    glm::vec2 m_origin;
-    float m_radius;
-    glm::vec3 m_color;
-    uint32_t m_resolution;
+namespace wglib::render_layers {
+class CircleRenderLayer : public render_layers::RenderLayer {
+public:
+  constexpr static auto default_resolution = 50u;
 
-    wgpu::Buffer m_vertex_buffer;
-    bool m_vertex_buffer_dirty{false};
+private:
+  glm::vec2 m_origin;
+  float m_radius;
+  glm::vec3 m_color;
+  uint32_t m_resolution;
 
-    wgpu::Buffer m_index_buffer;
-    bool m_index_buffer_dirty{false};
+  mutable wgpu::Buffer m_vertex_buffer;
+  mutable bool m_vertex_buffer_dirty{false};
 
-    std::vector<uint32_t> m_indices;
+  mutable wgpu::Buffer m_index_buffer;
+  mutable bool m_index_buffer_dirty{false};
 
-    std::vector<Vertex> m_vertices;
+  std::vector<uint32_t> m_indices;
 
-    bool isInitialized{false};
+  std::vector<Vertex> m_vertices;
 
-    auto calculateVertices() -> void;
-    static std::optional<wgpu::RenderPipeline> renderPipeline;
-    static auto initRenderPipeline(const wgpu::Device &, wgpu::TextureFormat, const wgpu::BindGroupLayout &) -> void;
+  bool isInitialized{false};
 
-  public:
-    CircleRenderLayer(glm::vec2 origin, float radius, glm::vec3 color, uint32_t resolution);
+  auto calculateVertices() -> void;
+  static std::optional<wgpu::RenderPipeline> renderPipeline;
+  static auto initRenderPipeline(const wgpu::Device &, wgpu::TextureFormat,
+                                 const wgpu::BindGroupLayout &) -> void;
 
-    auto InitRes(const wgpu::Device &device, wgpu::TextureFormat format, const wgpu::BindGroupLayout &bindGroupLayout)
-        -> void override;
+public:
+  CircleRenderLayer(glm::vec2 origin, float radius, glm::vec3 color,
+                    uint32_t resolution = default_resolution);
 
-    auto UpdateRes(wgpu::CommandEncoder &commandEncoder) const -> void override;
+  auto InitRes(const wgpu::Device &device, wgpu::TextureFormat format,
+               const wgpu::BindGroupLayout &bindGroupLayout) -> void override;
 
-    auto Render(wgpu::RenderPassEncoder &renderPassEncoder) const -> void override;
+  auto UpdateRes(wgpu::CommandEncoder &commandEncoder,
+                 const wgpu::Device &device) const -> void override;
 
-    auto getOrigin() const -> glm::vec2;
+  auto Render(wgpu::RenderPassEncoder &renderPassEncoder) const
+      -> void override;
 
-    auto setOrigin(glm::vec2 origin) -> void;
-    auto getRadius() const -> float;
+  auto getOrigin() const -> glm::vec2;
 
-    auto setRadius(float radius) -> void;
+  auto setOrigin(glm::vec2 origin) -> void;
+  auto getRadius() const -> float;
 
-    ~CircleRenderLayer() override;
+  auto setRadius(float radius) -> void;
+
+  auto getResolution() const -> uint32_t;
+
+  auto setResolution(uint32_t resolution) -> void;
+
+  ~CircleRenderLayer() override;
 };
 } // namespace wglib::render_layers

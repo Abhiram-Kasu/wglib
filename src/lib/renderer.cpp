@@ -111,7 +111,7 @@ namespace wglib
     auto Renderer::pushRenderLayer(render_layers::RenderLayer& renderLayer)
         -> void
     {
-        renderLayer.initRes(m_device, m_format, m_bind_group_layout);
+        renderLayer.InitRes(m_device, m_format, m_bind_group_layout);
         std::reference_wrapper renderLayerRef{renderLayer};
         m_render_layers.emplace_back(renderLayerRef);
     }

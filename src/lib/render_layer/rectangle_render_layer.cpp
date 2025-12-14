@@ -24,7 +24,7 @@ namespace wglib::render_layers
     }
 
     // TODO use index buffers to make it more efficient
-    auto RectangleRenderLayer::initRes(const wgpu::Device& device,
+    auto RectangleRenderLayer::InitRes(const wgpu::Device& device,
                                        const wgpu::TextureFormat format,
                                        const wgpu::BindGroupLayout& bindGroupLayout)
         -> void

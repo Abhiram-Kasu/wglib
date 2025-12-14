@@ -37,7 +37,7 @@ namespace wglib::render_layers
     public:
         RectangleRenderLayer(glm::vec2 position, glm::vec2 size, glm::vec3 color);
 
-        auto initRes(const wgpu::Device& device, wgpu::TextureFormat format,
+        auto InitRes(const wgpu::Device& device, wgpu::TextureFormat format,
                      const wgpu::BindGroupLayout& bindGroupLayout) -> void override;
 
         auto Render(wgpu::RenderPassEncoder& renderPassEncoder) const -> void override;

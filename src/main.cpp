@@ -3,6 +3,7 @@
 
 #include "lib/engine.hpp"
 
+#include "lib/render_layer/CircleRenderLayer.hpp"
 #include "lib/render_layer/rectangle_render_layer.hpp"
 
 int main()
@@ -15,8 +16,10 @@ int main()
     //     glm::vec2{50, 50}, glm::vec2{100, 100}, glm::vec3{1.0f, 1.0f, 0.0f});
     // engine.Draw<wglib::render_layers::RectangleRenderLayer>(
     //     glm::vec2{-500, 0}, glm::vec2{500, 500}, glm::vec3{1.0f, 1.0f, 1.0f});
-    wglib::render_layers::RectangleRenderLayer rect1(
-        glm::vec2{0, 0}, glm::vec2{100, 100}, glm::vec3{0.0f, 1.0f, 0.0f});
+    wglib::render_layers::RectangleRenderLayer rect1(glm::vec2{0, 0}, glm::vec2{100, 100}, glm::vec3{0.0f, 1.0f, 0.0f});
+
+    wglib::render_layers::CircleRenderLayer circle(glm::vec2{250, 250}, 50.0f, glm::vec3{0.0f, 0.0f, 1.0f}, 10);
+
     engine.OnUpdate([&](const double s) {
         std::cout << "Update function: " << s << std::endl;
         engine.Draw(rect1);
@@ -31,6 +34,8 @@ int main()
         }
 
         rect1.setPosition(rect1.getPosition() + velocity * static_cast<float>(s));
+
+        engine.Draw(circle);
     });
 
     engine.Start();

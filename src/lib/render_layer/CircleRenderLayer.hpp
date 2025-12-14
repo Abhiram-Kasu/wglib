@@ -3,37 +3,53 @@
 //
 #pragma once
 
+#include "lib/render_layer/Vertex.hpp"
 #include "render_layer.hpp"
-#include "glm/vec2.hpp"
-#include "glm/vec3.hpp"
+#include "webgpu/webgpu_cpp.h"
 
 namespace wglib::render_layers
 {
-    class CircleRenderLayer : public render_layers::RenderLayer
-    {
-    private:
-        glm::vec2 m_origin;
-        float m_radius;
-        glm::vec3 m_color;
+class CircleRenderLayer : public render_layers::RenderLayer
+{
+  private:
+    glm::vec2 m_origin;
+    float m_radius;
+    glm::vec3 m_color;
+    uint32_t m_resolution;
 
-        static std::optional<wgpu::RenderPipeline> pipeline;
+    wgpu::Buffer m_vertex_buffer;
+    bool m_vertex_buffer_dirty{false};
 
-    public:
-        CircleRenderLayer(glm::vec2 origin, float radius, glm::vec3 color);
+    wgpu::Buffer m_index_buffer;
+    bool m_index_buffer_dirty{false};
 
-        auto initRes(const wgpu::Device& device, wgpu::TextureFormat format,
-                     const wgpu::BindGroupLayout& bindGroupLayout) -> void override;
+    std::vector<uint32_t> m_indices;
 
-        auto Render(wgpu::RenderPassEncoder& renderPassEncoder,
-                    wgpu::CommandEncoder commandEncoder) const -> void override;
+    std::vector<Vertex> m_vertices;
 
-        auto getOrigin() const -> glm::vec2;
+    bool isInitialized{false};
 
-        auto setOrigin(glm::vec2 origin) -> void;
-        auto getRadius() const -> float;
+    auto calculateVertices() -> void;
+    static std::optional<wgpu::RenderPipeline> renderPipeline;
+    static auto initRenderPipeline(const wgpu::Device &, wgpu::TextureFormat, const wgpu::BindGroupLayout &) -> void;
 
-        auto setRadius(float radius) -> void;
+  public:
+    CircleRenderLayer(glm::vec2 origin, float radius, glm::vec3 color, uint32_t resolution);
 
-        ~CircleRenderLayer() override;
-    };
-}
+    auto InitRes(const wgpu::Device &device, wgpu::TextureFormat format, const wgpu::BindGroupLayout &bindGroupLayout)
+        -> void override;
+
+    auto UpdateRes(wgpu::CommandEncoder &commandEncoder) const -> void override;
+
+    auto Render(wgpu::RenderPassEncoder &renderPassEncoder) const -> void override;
+
+    auto getOrigin() const -> glm::vec2;
+
+    auto setOrigin(glm::vec2 origin) -> void;
+    auto getRadius() const -> float;
+
+    auto setRadius(float radius) -> void;
+
+    ~CircleRenderLayer() override;
+};
+} // namespace wglib::render_layers

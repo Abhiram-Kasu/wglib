@@ -16,7 +16,7 @@ namespace wglib::render_layers
 
         virtual auto Render(wgpu::RenderPassEncoder& renderPassEncoder) const -> void = 0;
 
-        virtual auto initRes(const wgpu::Device& device, wgpu::TextureFormat format,
+        virtual auto InitRes(const wgpu::Device& device, wgpu::TextureFormat format,
                              const wgpu::BindGroupLayout& bindGroupLayout)
             -> void = 0;
 

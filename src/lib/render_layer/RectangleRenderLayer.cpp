@@ -2,12 +2,12 @@
 // Created by Abhiram Kasu on 12/1/25.
 //
 
-#include "rectangle_render_layer.hpp"
+#include "RectangleRenderLayer.hpp"
 
 #include <print>
 
 #include "Vertex.hpp"
-#include "lib/util.hpp"
+#include "lib/Util.hpp"
 
 namespace wglib::render_layers {
 std::optional<wgpu::RenderPipeline> RectangleRenderLayer::m_render_pipeline{
@@ -25,7 +25,7 @@ auto RectangleRenderLayer::InitRes(const wgpu::Device &device,
                                    const wgpu::TextureFormat format,
                                    const wgpu::BindGroupLayout &bindGroupLayout)
     -> void {
-  if (isInitialized)
+  if (m_isInitialized)
     return;
   constexpr wgpu::BufferDescriptor bufferDesc{
       .usage = wgpu::BufferUsage::Vertex | wgpu::BufferUsage::CopyDst,
@@ -45,7 +45,7 @@ auto RectangleRenderLayer::InitRes(const wgpu::Device &device,
   if (!m_render_pipeline)
     initRenderPipeline(device, format, bindGroupLayout);
 
-  isInitialized = true;
+  m_isInitialized = true;
 }
 
 auto RectangleRenderLayer::calculateVertices() -> void {

@@ -4,10 +4,10 @@
 #include <ostream>
 #include <thread>
 
-#include "lib/engine.hpp"
+#include "lib/Engine.hpp"
 
 #include "lib/render_layer/CircleRenderLayer.hpp"
-#include "lib/render_layer/rectangle_render_layer.hpp"
+#include "lib/render_layer/RectangleRenderLayer.hpp"
 
 int main() {
   wglib::Engine engine({500, 500}, "title");
@@ -48,7 +48,7 @@ int main() {
     auto resolution = frameCounter % 20 == 0 ? circle.getResolution() + 1
                                              : circle.getResolution();
     if (resolution >= 300)
-      resolution = wglib::render_layers::CircleRenderLayer::default_resolution;
+      resolution = wglib::render_layers::CircleRenderLayer::DEFAULT_RESOLUTION;
     circle.setResolution(static_cast<uint32_t>(resolution));
   });
 

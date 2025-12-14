@@ -4,7 +4,7 @@
 
 #include "CircleRenderLayer.hpp"
 #include "glm/ext/scalar_constants.hpp"
-#include "lib/util.hpp"
+#include "lib/Util.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include <__ostream/print.h>
 #include <cassert>
@@ -12,7 +12,7 @@
 
 namespace wglib::render_layers {
 
-std::optional<wgpu::RenderPipeline> CircleRenderLayer::renderPipeline{
+std::optional<wgpu::RenderPipeline> CircleRenderLayer::m_render_pipeline{
     std::nullopt};
 
 CircleRenderLayer::CircleRenderLayer(glm::vec2 origin, float radius,
@@ -25,7 +25,7 @@ CircleRenderLayer::CircleRenderLayer(glm::vec2 origin, float radius,
 
 auto CircleRenderLayer::Render(wgpu::RenderPassEncoder &renderPassEncoder) const
     -> void {
-  renderPassEncoder.SetPipeline(renderPipeline.value());
+  renderPassEncoder.SetPipeline(m_render_pipeline.value());
   renderPassEncoder.SetVertexBuffer(0, m_vertex_buffer);
   renderPassEncoder.SetIndexBuffer(m_index_buffer, wgpu::IndexFormat::Uint32, 0,
                                    m_indices.size() * sizeof(uint32_t));
@@ -35,7 +35,7 @@ auto CircleRenderLayer::Render(wgpu::RenderPassEncoder &renderPassEncoder) const
 auto CircleRenderLayer::initRenderPipeline(
     const wgpu::Device &device, wgpu::TextureFormat format,
     const wgpu::BindGroupLayout &bindGroupLayout) -> void {
-  if (renderPipeline.has_value())
+  if (m_render_pipeline.has_value())
     return;
   const auto shaderCode = wglib::util::readFile("../src/shaders/default.wgsl");
   wgpu::ShaderSourceWGSL wgsl{{.code = shaderCode.c_str()}};
@@ -82,14 +82,15 @@ auto CircleRenderLayer::initRenderPipeline(
               .buffers = &vertexBufferLayout,
           },
       .fragment = &fragmentState};
-  renderPipeline = std::make_optional(device.CreateRenderPipeline(&descriptor));
+  m_render_pipeline =
+      std::make_optional(device.CreateRenderPipeline(&descriptor));
 }
 
 auto CircleRenderLayer::InitRes(const wgpu::Device &device,
                                 wgpu::TextureFormat format,
                                 const wgpu::BindGroupLayout &bindGroupLayout)
     -> void {
-  if (isInitialized)
+  if (m_isInitialized)
     return;
 
   const wgpu::BufferDescriptor vertexBufferDesc{
@@ -119,10 +120,10 @@ auto CircleRenderLayer::InitRes(const wgpu::Device &device,
   }
   m_index_buffer.Unmap();
 
-  if (not renderPipeline)
+  if (not m_render_pipeline)
     initRenderPipeline(device, format, bindGroupLayout);
 
-  isInitialized = true;
+  m_isInitialized = true;
 }
 auto CircleRenderLayer::UpdateRes(wgpu::CommandEncoder &commandEncoder,
                                   const wgpu::Device &device) const -> void {

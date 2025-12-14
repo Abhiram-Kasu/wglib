@@ -3,9 +3,9 @@
 //
 
 #pragma once
+#include "RenderLayer.hpp"
 #include "Vertex.hpp"
 #include "glm/vec2.hpp"
-#include "render_layer.hpp"
 #include "webgpu/webgpu_cpp.h"
 
 namespace wglib::render_layers {
@@ -23,7 +23,7 @@ private:
 
   Vertex m_vertices[6];
 
-  bool isInitialized{false};
+  bool m_isInitialized{false};
 
   auto calculateVertices() -> void;
 

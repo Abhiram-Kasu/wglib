@@ -2,7 +2,7 @@
 // Created by Abhiram Kasu on 11/27/25.
 //
 
-#include "renderer.hpp"
+#include "Renderer.hpp"
 
 #include <__ranges/views.h>
 #include <algorithm>

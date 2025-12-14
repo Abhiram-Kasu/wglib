@@ -4,7 +4,7 @@
 #include <webgpu/webgpu_cpp.h>
 
 #include "glm/ext/vector_float2.hpp"
-#include "render_layer/render_layer.hpp"
+#include "render_layer/RenderLayer.hpp"
 
 namespace wglib {
 

@@ -127,6 +127,7 @@ auto CircleRenderLayer::InitRes(const wgpu::Device &device,
 }
 auto CircleRenderLayer::UpdateRes(wgpu::CommandEncoder &commandEncoder,
                                   const wgpu::Device &device) const -> void {
+  auto queue = device.GetQueue();
 
   if (m_vertex_buffer.GetSize() < sizeof(Vertex) * m_vertices.size() or
       m_index_buffer.GetSize() < sizeof(uint32_t) * m_indices.size()) {
@@ -153,17 +154,14 @@ auto CircleRenderLayer::UpdateRes(wgpu::CommandEncoder &commandEncoder,
   }
   if (m_vertex_buffer_dirty) {
 
-    commandEncoder.WriteBuffer(
-        m_vertex_buffer, 0,
-        reinterpret_cast<const uint8_t *>(m_vertices.data()),
-        sizeof(Vertex) * m_vertices.size());
+    queue.WriteBuffer(m_vertex_buffer, 0, m_vertices.data(),
+                      sizeof(Vertex) * m_vertices.size());
     m_vertex_buffer_dirty = false;
   }
   if (m_index_buffer_dirty) {
 
-    commandEncoder.WriteBuffer(
-        m_index_buffer, 0, reinterpret_cast<const uint8_t *>(m_indices.data()),
-        sizeof(uint32_t) * m_indices.size());
+    queue.WriteBuffer(m_index_buffer, 0, m_indices.data(),
+                      sizeof(uint32_t) * m_indices.size());
     m_index_buffer_dirty = false;
   }
 }

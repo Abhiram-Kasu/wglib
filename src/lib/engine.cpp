@@ -2,7 +2,12 @@
 
 #include <iostream>
 #include <memory>
+#ifndef __EMSCRIPTEN__
 #include <webgpu/webgpu_cpp_print.h>
+#endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 #include "Renderer.hpp"
 #include "webgpu/webgpu_cpp.h"
@@ -19,7 +24,8 @@ Engine::Engine(glm::vec2 size, std::string_view title) : m_window_size(size) {
       [&](wgpu::RequestAdapterStatus status, wgpu::Adapter a,
           wgpu::StringView message) {
         if (status != wgpu::RequestAdapterStatus::Success) {
-          std::cout << "RequestAdapter: " << message << "\n";
+          std::cout << "RequestAdapter: "
+                    << std::string(message.data, message.length) << "\n";
           exit(0);
         }
         m_adapter = std::move(a);
@@ -34,7 +40,9 @@ Engine::Engine(glm::vec2 size, std::string_view title) : m_window_size(size) {
   desc.SetUncapturedErrorCallback([](const wgpu::Device &,
                                      wgpu::ErrorType errorType,
                                      wgpu::StringView message) {
-    std::cout << "Error: " << errorType << " - message: " << message << "\n";
+    std::cout << "Error: " << static_cast<int>(errorType)
+              << " - message: " << std::string(message.data, message.length)
+              << "\n";
   });
 
   wgpu::Future f2 = m_adapter.RequestDevice(
@@ -42,7 +50,8 @@ Engine::Engine(glm::vec2 size, std::string_view title) : m_window_size(size) {
       [&](wgpu::RequestDeviceStatus status, wgpu::Device d,
           wgpu::StringView message) {
         if (status != wgpu::RequestDeviceStatus::Success) {
-          std::cout << "RequestDevice: " << message << "\n";
+          std::cout << "RequestDevice: "
+                    << std::string(message.data, message.length) << "\n";
           exit(0);
         }
         m_device = std::move(d);
@@ -66,7 +75,22 @@ Engine::Engine(glm::vec2 size, std::string_view title) : m_window_size(size) {
 
 auto Engine::Start() -> void {
 #if defined(__EMSCRIPTEN__)
-  emscripten_set_main_loop(render, 0, false);
+  // For Emscripten, we need a lambda wrapper since render() is a member
+  // function
+  emscripten_set_main_loop_arg(
+      [](void *arg) {
+        auto *engine = static_cast<Engine *>(arg);
+        engine->render();
+        engine->m_instance.ProcessEvents();
+        if (engine->m_update_function) {
+          static double last_time = emscripten_get_now() / 1000.0;
+          double current_time = emscripten_get_now() / 1000.0;
+          double delta = current_time - last_time;
+          last_time = current_time;
+          engine->m_update_function(delta);
+        }
+      },
+      this, 0, true);
 #else
   while (!glfwWindowShouldClose(m_window_manager->window())) {
     const auto currTime = glfwGetTime();
@@ -86,7 +110,10 @@ auto Engine::render() -> void {
   wgpu::SurfaceTexture surfaceTexture;
   m_window_manager->surface().GetCurrentTexture(&surfaceTexture);
   m_renderer->Render(surfaceTexture);
+#ifndef __EMSCRIPTEN__
+  // Emscripten handles presentation automatically via requestAnimationFrame
   m_window_manager->surface().Present();
+#endif
 }
 
 Engine::~Engine() {}

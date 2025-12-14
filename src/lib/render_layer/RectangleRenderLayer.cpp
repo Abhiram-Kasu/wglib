@@ -129,9 +129,8 @@ auto RectangleRenderLayer::Render(
 auto RectangleRenderLayer::UpdateRes(wgpu::CommandEncoder &commandEncoder,
                                      const wgpu::Device &device) const -> void {
   if (m_vertex_buffer_dirty) {
-    commandEncoder.WriteBuffer(m_vertex_buffer, 0,
-                               reinterpret_cast<const uint8_t *>(m_vertices),
-                               sizeof(Vertex) * 6);
+    auto queue = device.GetQueue();
+    queue.WriteBuffer(m_vertex_buffer, 0, m_vertices, sizeof(Vertex) * 6);
   }
 }
 

@@ -1,8 +1,4 @@
 #include <__ostream/print.h>
-#include <cmath>
-#include <iostream>
-#include <ostream>
-#include <thread>
 
 #include "lib/Engine.hpp"
 

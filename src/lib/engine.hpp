@@ -2,13 +2,11 @@
 #include "WindowManager.hpp"
 #include "lib/render_layer/RenderLayer.hpp"
 #include <concepts>
-#include <cstdint>
 #include <memory>
 #include <string_view>
 #include <webgpu/webgpu_cpp.h>
 
 #include "Renderer.hpp"
-#include "glm/vec2.hpp"
 
 namespace wglib {
 class Engine {

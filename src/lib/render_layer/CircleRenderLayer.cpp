@@ -4,7 +4,8 @@
 
 #include "CircleRenderLayer.hpp"
 #include "glm/ext/scalar_constants.hpp"
-#include "lib/Util.hpp"
+#include "lib/util.hpp"
+#include "webgpu/webgpu.h"
 #include "webgpu/webgpu_cpp.h"
 #include <__ostream/print.h>
 #include <cassert>
@@ -84,6 +85,7 @@ auto CircleRenderLayer::initRenderPipeline(
       .fragment = &fragmentState};
   m_render_pipeline =
       std::make_optional(device.CreateRenderPipeline(&descriptor));
+  util::log("Created render pipeline");
 }
 
 auto CircleRenderLayer::InitRes(const wgpu::Device &device,

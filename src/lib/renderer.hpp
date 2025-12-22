@@ -1,6 +1,5 @@
 #pragma once
 #include <functional>
-#include <memory>
 #include <webgpu/webgpu_cpp.h>
 
 #include "glm/ext/vector_float2.hpp"

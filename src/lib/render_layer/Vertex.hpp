@@ -3,14 +3,12 @@
 //
 
 #pragma once
-#include "glm/vec2.hpp"
-#include "glm/vec3.hpp"
 
-namespace wglib::render_layers
-{
-struct Vertex
-{
-    glm::vec2 position;
-    glm::vec3 color;
+#include "glm/ext/vector_float2.hpp"
+#include "glm/ext/vector_float3.hpp"
+namespace wglib::render_layers {
+struct Vertex {
+  glm::vec2 position;
+  glm::vec3 color;
 };
-}
+} // namespace wglib::render_layers

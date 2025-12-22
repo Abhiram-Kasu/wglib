@@ -3,9 +3,8 @@
 //
 
 #pragma once
-#include <cstdlib>  // for std::exit
-#include <fstream>  // for std::ifstream, std::ios::binary
-#include <iterator> // for std::istreambuf_iterator
+#include <cstdlib> // for std::exit
+#include <fstream> // for std::ifstream, std::ios::binary
 #include <print>
 #include <print> // if you use std::println
 #include <string>
@@ -44,4 +43,15 @@ inline auto readFile(std::string_view path) -> std::string {
 
   return contents;
 }
+
+template <typename... Args>
+inline void log(std::string_view fmt, Args &&...args) {
+  if constexpr (sizeof...(args) > 1) {
+
+    std::println(fmt, args...);
+  } else {
+    std::println("{}", fmt);
+  }
+}
+
 } // namespace wglib::util

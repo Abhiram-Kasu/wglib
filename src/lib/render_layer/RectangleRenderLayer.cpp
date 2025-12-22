@@ -7,7 +7,7 @@
 #include <print>
 
 #include "Vertex.hpp"
-#include "lib/util.hpp"
+#include "lib/Util.hpp"
 
 namespace wglib::render_layers {
 std::optional<wgpu::RenderPipeline> RectangleRenderLayer::m_render_pipeline{
@@ -152,5 +152,13 @@ auto RectangleRenderLayer::setSize(glm::vec2 size) -> void {
   updateVertexBuffer();
 }
 
+auto RectangleRenderLayer::getColor() const -> glm::vec3 { return m_color; }
+auto RectangleRenderLayer::setColor(glm::vec3 color) -> void {
+  m_color = color;
+  for (auto &v : m_vertices) {
+    v.color = m_color;
+  }
+  m_vertex_buffer_dirty = true;
+}
 RectangleRenderLayer::~RectangleRenderLayer() {}
 } // namespace wglib::render_layers

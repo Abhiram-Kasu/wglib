@@ -4,8 +4,7 @@
 
 #include "CircleRenderLayer.hpp"
 #include "glm/ext/scalar_constants.hpp"
-#include "lib/util.hpp"
-#include "webgpu/webgpu.h"
+#include "lib/Util.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include <__ostream/print.h>
 #include <cassert>
@@ -227,6 +226,15 @@ auto CircleRenderLayer::setResolution(uint32_t resolution) -> void {
   m_resolution = resolution;
   m_index_buffer_dirty = m_vertex_buffer_dirty = true;
   calculateVertices();
+}
+
+auto CircleRenderLayer::getColor() const -> glm::vec3 { return m_color; }
+auto CircleRenderLayer::setColor(glm::vec3 color) -> void {
+  m_color = color;
+  for (auto &v : m_vertices) {
+    v.color = m_color;
+  }
+  m_vertex_buffer_dirty = true;
 }
 
 CircleRenderLayer::~CircleRenderLayer() = default;

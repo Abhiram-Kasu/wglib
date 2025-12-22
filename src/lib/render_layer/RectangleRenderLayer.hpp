@@ -52,6 +52,9 @@ public:
 
   auto setSize(glm::vec2 size) -> void;
 
+  auto getColor() const -> glm::vec3;
+  auto setColor(glm::vec3) -> void;
+
   ~RectangleRenderLayer() override;
 };
 } // namespace wglib::render_layers

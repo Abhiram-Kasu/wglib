@@ -59,6 +59,10 @@ public:
 
   auto setResolution(uint32_t resolution) -> void;
 
+  auto getColor() const -> glm::vec3;
+
+  auto setColor(glm::vec3 color) -> void;
+
   ~CircleRenderLayer() override;
 };
 } // namespace wglib::render_layers

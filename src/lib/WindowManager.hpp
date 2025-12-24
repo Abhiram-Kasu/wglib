@@ -24,6 +24,9 @@ private:
 
   auto configureSurface(wgpu::Device &device, wgpu::Adapter &adapter) -> void;
 
+  static auto onClick(int, int, int) -> void;
+  auto onMouseMove() -> void;
+
 public:
   WindowManager(uint32_t width, uint32_t height, std::string_view title,
                 wgpu::Instance &instance, wgpu::Device &device,

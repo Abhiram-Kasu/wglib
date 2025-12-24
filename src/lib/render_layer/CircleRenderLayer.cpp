@@ -103,7 +103,7 @@ auto CircleRenderLayer::InitRes(const wgpu::Device &device,
   if (m_vertex_buffer.WriteMappedRange(0, m_vertices.data(),
                                        sizeof(Vertex) * m_vertices.size()) !=
       wgpu::Status::Success) {
-    std::println("Failed to write vertex buffer data");
+    util::log("Failed to write vertex buffer data");
     exit(0);
   }
   m_vertex_buffer.Unmap();
@@ -116,7 +116,7 @@ auto CircleRenderLayer::InitRes(const wgpu::Device &device,
   if (m_index_buffer.WriteMappedRange(0, m_indices.data(),
                                       sizeof(uint32_t) * m_indices.size()) !=
       wgpu::Status::Success) {
-    std::println("Failed to write index buffer data");
+    util::log("Failed to write index buffer data");
     exit(0);
   }
   m_index_buffer.Unmap();
@@ -133,8 +133,8 @@ auto CircleRenderLayer::UpdateRes(wgpu::CommandEncoder &commandEncoder,
   if (m_vertex_buffer.GetSize() < sizeof(Vertex) * m_vertices.size() or
       m_index_buffer.GetSize() < sizeof(uint32_t) * m_indices.size()) {
 
-    std::println("Realloc vertex and index buffer to {}b from {}b",
-                 m_vertices.size(), m_vertex_buffer.GetSize() / sizeof(Vertex));
+    util::log("Realloc vertex and index buffer to {}b from {}b",
+              m_vertices.size(), m_vertex_buffer.GetSize() / sizeof(Vertex));
     m_vertex_buffer.Destroy();
     const wgpu::BufferDescriptor descriptor{
         .usage = wgpu::BufferUsage::Vertex | wgpu::BufferUsage::CopyDst,

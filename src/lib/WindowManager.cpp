@@ -1,5 +1,6 @@
 #include "WindowManager.hpp"
 
+#include "Util.hpp"
 #include <iostream>
 
 #ifndef __EMSCRIPTEN__
@@ -24,7 +25,7 @@ WindowManager::WindowManager(uint32_t width, uint32_t height,
   m_window = glfwCreateWindow(width, height, "WebGPU window", nullptr, nullptr);
   m_surface = wgpu::glfw::CreateSurfaceForWindow(instance, m_window);
   if (!m_surface) {
-    std::cout << "Failed to create surface" << std::endl;
+    util::log("Failed to create surface");
     exit(0);
   }
   configureSurface(device, adapter);
@@ -38,7 +39,7 @@ WindowManager::WindowManager(uint32_t width, uint32_t height,
   m_surface = instance.CreateSurface(&surfaceDesc);
 
   if (!m_surface) {
-    std::cout << "Failed to create surface from canvas" << std::endl;
+    util::log("Failed to create surface from canvas");
     exit(0);
   }
   configureSurface(device, adapter);
@@ -51,9 +52,10 @@ auto WindowManager::configureSurface(wgpu::Device &device,
   m_surface.GetCapabilities(adapter, &capabilities);
   m_format = capabilities.formats[0];
 #ifndef __EMSCRIPTEN__
-  std::cout << "Using format: " << m_format << std::endl;
+
+  util::log("Using format: {}", m_format);
 #else
-  std::cout << "Using format (Emscripten)" << std::endl;
+  util::log("Using format (Emscripten)");
 #endif
 
   wgpu::SurfaceConfiguration config{.device = device,

@@ -3,14 +3,46 @@
 //
 
 #pragma once
+#include "webgpu/webgpu_cpp.h"
+#include "webgpu/webgpu_cpp_print.h"
 #include <cstdlib> // for std::exit
 #include <fstream> // for std::ifstream, std::ios::binary
 #include <print>
 #include <print> // if you use std::println
+#include <sstream>
 #include <string>
 #include <string_view>
+#include <type_traits>
 
+namespace std {
+// Formatter specifically for wgpu types
+template <typename T>
+  requires std::is_enum_v<T> && requires(std::ostream &os, const T &value) {
+    { os << value } -> std::convertible_to<std::ostream &>;
+  }
+struct formatter<T> : formatter<string> {
+  auto format(const T &value, format_context &ctx) const {
+    std::stringstream oss;
+    oss << value;
+    return formatter<string>::format(oss.str(), ctx);
+  }
+};
+} // namespace std
 namespace wglib::util {
+template <typename... Args>
+void log(std::format_string<Args...> fmt, Args &&...args) {
+  std::println(fmt, std::forward<Args>(args)...);
+}
+
+inline void log(std::string_view msg) { util::log("{}", msg); }
+inline auto dispatchSizeCeil(size_t total_elements, size_t workgroup_size)
+    -> size_t {
+  if (workgroup_size == 0)
+    return 0; // Avoid division by zero
+  // The formula: (dividend + divisor - 1) / divisor
+  return (total_elements + workgroup_size - 1) / workgroup_size;
+}
+
 inline auto readFile(std::string_view path) -> std::string {
 #ifdef __EMSCRIPTEN__
   // For Emscripten, convert relative paths to absolute virtual filesystem paths
@@ -25,9 +57,9 @@ inline auto readFile(std::string_view path) -> std::string {
 #endif
   if (!f) {
 #ifdef __EMSCRIPTEN__
-    std::println("Could not open file: {} (adjusted: {})", path, adjusted_path);
+    util::log("Could not open file: {} (adjusted: {})", path, adjusted_path);
 #else
-    std::println("Could not open file: {}", path);
+    util::log("Could not open file: {}", path);
 #endif
     std::exit(EXIT_FAILURE);
   }
@@ -44,14 +76,51 @@ inline auto readFile(std::string_view path) -> std::string {
   return contents;
 }
 
-template <typename... Args>
-inline void log(std::string_view fmt, Args &&...args) {
-  if constexpr (sizeof...(args) > 1) {
+inline auto createShaderModuleFromFile(std::string_view path,
+                                       const wgpu::Device &device)
+    -> wgpu::ShaderModule {
+  const auto shaderCode = readFile(path);
+  wgpu::ShaderSourceWGSL wgsl{{.code = shaderCode.c_str()}};
+  wgpu::ShaderModuleDescriptor shaderModuleDescriptor{.nextInChain = &wgsl};
+  return device.CreateShaderModule(&shaderModuleDescriptor);
+}
 
-    std::println(fmt, args...);
-  } else {
-    std::println("{}", fmt);
+template <typename T, wgpu::BufferUsage Usage>
+wgpu::Buffer createBuffer(const wgpu::Device &device, uint64_t count,
+                          bool mappedAtCreation = false) {
+  // Uniform buffers
+  if constexpr (Usage & wgpu::BufferUsage::Uniform) {
+    static_assert(alignof(T) >= 16,
+                  "Uniform buffer types must be at least 16-byte aligned");
   }
+
+  // Storage buffers
+  if constexpr (Usage & wgpu::BufferUsage::Storage) {
+    static_assert(alignof(T) >= 4,
+                  "Storage buffer types must be at least 4-byte aligned");
+  }
+
+  // Vertex buffers
+  if constexpr (Usage & wgpu::BufferUsage::Vertex) {
+    static_assert(
+        alignof(T) >= 4,
+        "Vertex buffer element types must be at least 4-byte aligned");
+  }
+
+  auto size = sizeof(T) * count;
+
+  // Uniform buffers must be padded to 16 bytes
+  if constexpr (Usage & wgpu::BufferUsage::Uniform) {
+    size = (size + 15) & ~uint64_t(15);
+  }
+
+  wgpu::BufferDescriptor desc{
+      .size = size,
+      .usage = Usage,
+      .mappedAtCreation = mappedAtCreation,
+  };
+
+  return device.CreateBuffer(&desc);
 }
 
 } // namespace wglib::util

@@ -1,5 +1,7 @@
 #pragma once
 #include "WindowManager.hpp"
+#include "compute/ComputeEngine.hpp"
+#include "lib/compute/ComputeLayer.hpp"
 #include "lib/render_layer/RenderLayer.hpp"
 #include <concepts>
 #include <memory>
@@ -11,6 +13,7 @@
 namespace wglib {
 class Engine {
   std::unique_ptr<WindowManager> m_window_manager;
+  std::unique_ptr<wglib::compute::ComputeEngine> m_computeEngine;
   wgpu::Instance m_instance;
   wgpu::Device m_device;
   wgpu::Adapter m_adapter;
@@ -20,6 +23,7 @@ class Engine {
   double m_last_frame_time{0.0f};
 
   auto render() -> void;
+  auto update_frame(double delta) -> void;
 
 public:
   Engine(glm::vec2 size, std::string_view title);
@@ -36,5 +40,8 @@ public:
       -> void {
     m_renderer->pushRenderLayer(renderLayer);
   }
+
+  auto PushComputeLayer(compute::ComputeLayer &computeLayer)
+      -> compute::ComputeEngine::ComputeHandle &;
 };
 } // namespace wglib

@@ -1,9 +1,18 @@
 #include <__ostream/print.h>
+#include <any>
+#include <limits>
+#include <numbers>
+#include <ranges>
+#include <span>
+#include <thread>
+#include <type_traits>
 
 #include "GLFW/glfw3.h"
 #include "glm/common.hpp"
 #include "lib/Engine.hpp"
+#include "lib/Util.hpp"
 
+#include "lib/compute/ExampleLayers/ExampleLayer.hpp"
 #include "lib/render_layer/CircleRenderLayer.hpp"
 #include "lib/render_layer/RectangleRenderLayer.hpp"
 
@@ -16,6 +25,18 @@ int main() {
   wglib::render_layers::CircleRenderLayer circle(glm::vec2{250, 250}, 50.0f,
                                                  glm::vec3{0.0f, 0.0f, 1.0f});
 
+  wglib::compute::ExampleLayer exampleLayer{50000, std::numbers::pi};
+  auto &handle = engine.PushComputeLayer(exampleLayer);
+
+  handle.onComplete([](const void *buffer) {
+    auto *items = reinterpret_cast<const float *>(buffer);
+
+    std::span<const float, 50'000> span(items, 50'000);
+
+    for (const auto &item : span | std::ranges::views::take(10)) {
+      wglib::util::log("Item: {}", item);
+    }
+  });
   engine.OnUpdate([&](const double s) {
     engine.Draw(rect1);
     static auto velocity = glm::vec2{50};

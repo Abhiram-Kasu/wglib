@@ -27,13 +27,17 @@ A modern C++23 library for creating 2D graphics and compute applications using W
 
 ## Building
 
-### Desktop Build
+### Getting the Code
 
 ```bash
 # Clone the repository with submodules
 git clone --recursive https://github.com/Abhiram-Kasu/wglib.git
 cd wglib
+```
 
+### Desktop Build
+
+```bash
 # Create build directory
 mkdir build && cd build
 
@@ -48,10 +52,6 @@ cmake --build .
 ### Web Build
 
 ```bash
-# Clone the repository with submodules
-git clone --recursive https://github.com/Abhiram-Kasu/wglib.git
-cd wglib
-
 # Run the build script
 ./scripts/build_web.sh
 
@@ -76,8 +76,8 @@ int main() {
   
   // Create render layers
   wglib::render_layers::RectangleRenderLayer rect(
-      glm::vec2{100, 100},      // position
-      glm::vec2{200, 150},      // size
+      glm::vec2{100, 100},        // position
+      glm::vec2{200, 150},        // size
       glm::vec3{1.0f, 0.0f, 0.0f} // color (red)
   );
   

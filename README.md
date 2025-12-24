@@ -241,10 +241,4 @@ wglib/
 - Event processing
 - Manual Engine Tick Mode to control when the update cycle runs
 
-## License
 
-[Add your license information here]
-
-## Contributing
-
-[Add contributing guidelines here]

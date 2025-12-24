@@ -4,7 +4,9 @@
 
 #pragma once
 #include "webgpu/webgpu_cpp.h"
+#ifndef __EMSCRIPTEN__
 #include "webgpu/webgpu_cpp_print.h"
+#endif
 #include <cstdlib> // for std::exit
 #include <fstream> // for std::ifstream, std::ios::binary
 #include <print>

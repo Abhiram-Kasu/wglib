@@ -47,6 +47,8 @@ private:
 
 public:
   ComputeEngine(wgpu::Device &m_device);
-  auto PushComputeLayer(ComputeLayer &computeLayer) -> ComputeHandle &;
+  auto PushComputeLayer(ComputeLayer &computeLayer,
+                        std::optional<std::function<void(const void *)>>
+                            onComplete = std::nullopt) -> ComputeHandle &;
 };
 } // namespace wglib::compute

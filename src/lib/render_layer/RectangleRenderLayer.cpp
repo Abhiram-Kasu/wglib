@@ -126,8 +126,7 @@ auto RectangleRenderLayer::Render(
   renderPassEncoder.Draw(6);
 }
 
-auto RectangleRenderLayer::UpdateRes(wgpu::CommandEncoder &commandEncoder,
-                                     const wgpu::Device &device) const -> void {
+auto RectangleRenderLayer::UpdateRes(const wgpu::Device &device) const -> void {
   if (m_vertex_buffer_dirty) {
     auto queue = device.GetQueue();
     queue.WriteBuffer(m_vertex_buffer, 0, m_vertices, sizeof(Vertex) * 6);

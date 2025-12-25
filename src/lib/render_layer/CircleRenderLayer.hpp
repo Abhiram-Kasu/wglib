@@ -42,8 +42,7 @@ public:
   auto InitRes(const wgpu::Device &device, wgpu::TextureFormat format,
                const wgpu::BindGroupLayout &bindGroupLayout) -> void override;
 
-  auto UpdateRes(wgpu::CommandEncoder &commandEncoder,
-                 const wgpu::Device &device) const -> void override;
+  auto UpdateRes(const wgpu::Device &device) const -> void override;
 
   auto Render(wgpu::RenderPassEncoder &renderPassEncoder) const
       -> void override;

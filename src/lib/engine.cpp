@@ -40,6 +40,11 @@ Engine::Engine(glm::vec2 size, std::string_view title) : m_window_size(size) {
     exit(0);
   };
 
+  // auto device = m_adapter.CreateDevice();
+  // auto queue = device.GetQueue();
+  // queue.Submit(0, nullptr);
+  // exit(1);
+
   wgpu::DeviceDescriptor desc{};
   desc.SetUncapturedErrorCallback([](const wgpu::Device &,
                                      wgpu::ErrorType errorType,
@@ -104,9 +109,17 @@ auto Engine::Start() -> void {
 }
 
 auto Engine::update_frame(double delta) -> void {
+  m_accumulator += delta;
+
+  if (m_target_frame_time > 0.0 && m_accumulator < m_target_frame_time) {
+    return;
+  }
+
+  m_accumulator = 0.0;
+
   m_computeEngine->Compute();
-  render();
   m_instance.ProcessEvents();
+  render();
   if (m_update_function) {
     m_update_function(delta);
   }
@@ -122,9 +135,11 @@ auto Engine::render() -> void {
 #endif
 }
 
-auto Engine::PushComputeLayer(compute::ComputeLayer &computeLayer)
+auto Engine::PushComputeLayer(
+    compute::ComputeLayer &computeLayer,
+    std::optional<std::function<void(const void *)>> onComplete)
     -> compute::ComputeEngine::ComputeHandle & {
-  return m_computeEngine->PushComputeLayer(computeLayer);
+  return m_computeEngine->PushComputeLayer(computeLayer, onComplete);
 }
 
 Engine::~Engine() {}

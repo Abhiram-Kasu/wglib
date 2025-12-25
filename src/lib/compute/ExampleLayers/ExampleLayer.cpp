@@ -70,7 +70,7 @@ auto ExampleLayer::ComputeImpl(wgpu::CommandEncoder &e, wgpu::Queue &queue)
   auto computePass = e.BeginComputePass();
   computePass.SetPipeline(m_computePipeline);
   computePass.SetBindGroup(0, m_bindGroup);
-  computePass.DispatchWorkgroups(util::dispatchSizeCeil(m_items.size(), 64));
+  computePass.DispatchWorkgroups(util::divCeil(m_items.size(), 64uz));
   computePass.End();
 
   // Copy result buffer to staging buffer for CPU readback

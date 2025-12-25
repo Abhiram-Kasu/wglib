@@ -5,8 +5,8 @@
 #include "Renderer.hpp"
 
 #include <__ranges/views.h>
-#include <algorithm>
 
+#include "Util.hpp"
 #include "webgpu/webgpu_cpp.h"
 
 namespace wglib {
@@ -43,26 +43,10 @@ auto Renderer::updateUniformBuffer() -> void {
 }
 
 auto Renderer::Render(wgpu::SurfaceTexture &surfaceTexture) -> void {
-  // Need to pass uniforms for the renderer
-
-  // Create render pass
-  wgpu::RenderPassColorAttachment attachment{
-      .view = surfaceTexture.texture.CreateView(),
-      .loadOp = wgpu::LoadOp::Clear,
-      .storeOp = wgpu::StoreOp::Store};
-
-  wgpu::RenderPassDescriptor renderPassDesc{.colorAttachmentCount = 1,
-                                            .colorAttachments = &attachment};
-
-  auto encoder = m_device.CreateCommandEncoder();
-
   for (auto &layer : m_render_layers) {
-    layer.get().UpdateRes(encoder, m_device);
+    layer.get().UpdateRes(m_device);
   }
 
-  auto renderPass = encoder.BeginRenderPass(&renderPassDesc);
-
-  // set uniform buffer
   wgpu::BindGroupEntry entry{.binding = 0,
                              .buffer = m_uniform_buffer,
                              .offset = 0,
@@ -73,6 +57,18 @@ auto Renderer::Render(wgpu::SurfaceTexture &surfaceTexture) -> void {
       .entries = &entry,
   };
   auto m_bind_group = m_device.CreateBindGroup(&desc);
+
+  wgpu::RenderPassColorAttachment attachment{
+      .view = surfaceTexture.texture.CreateView(),
+      .loadOp = wgpu::LoadOp::Clear,
+      .storeOp = wgpu::StoreOp::Store};
+
+  wgpu::RenderPassDescriptor renderPassDesc{.colorAttachmentCount = 1,
+                                            .colorAttachments = &attachment};
+
+  auto encoder = m_device.CreateCommandEncoder();
+  auto renderPass = encoder.BeginRenderPass(&renderPassDesc);
+
   renderPass.SetBindGroup(0, m_bind_group, 0, 0);
 
   for (auto &layer : m_render_layers) {
@@ -80,10 +76,10 @@ auto Renderer::Render(wgpu::SurfaceTexture &surfaceTexture) -> void {
   }
 
   renderPass.End();
-  const auto encoderFinish = encoder.Finish();
 
+  const auto encoderFinish = encoder.Finish();
   m_device.GetQueue().Submit(1, &encoderFinish);
-  // clear render queue
+
   m_render_layers.clear();
 }
 

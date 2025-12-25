@@ -19,8 +19,7 @@ public:
                        const wgpu::BindGroupLayout &bindGroupLayout)
       -> void = 0;
 
-  virtual auto UpdateRes(wgpu::CommandEncoder &commandEncoder,
-                         const wgpu::Device &device) const -> void = 0;
+  virtual auto UpdateRes(const wgpu::Device &device) const -> void = 0;
 
   virtual ~RenderLayer();
 };

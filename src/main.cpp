@@ -12,11 +12,14 @@
 #include "lib/Engine.hpp"
 #include "lib/Util.hpp"
 
+#include "lib/compute/ExampleLayers/ConwaysGameOfLife.hpp"
 #include "lib/compute/ExampleLayers/ExampleLayer.hpp"
 #include "lib/render_layer/CircleRenderLayer.hpp"
 #include "lib/render_layer/RectangleRenderLayer.hpp"
+#include "lib/render_layer/TextureRenderLayer.hpp"
+#include "webgpu/webgpu_cpp.h"
 
-int main() {
+auto runComputeAndDrawingExample() {
   wglib::Engine engine({500, 500}, "title");
 
   wglib::render_layers::RectangleRenderLayer rect1(
@@ -68,3 +71,28 @@ int main() {
 
   engine.Start();
 }
+
+auto runConwaysGameOfLife() {
+  wglib::Engine engine({2560, 1440}, "title");
+  wglib::compute::ConwaysGameOfLifeComputeLayer compute{{2560, 1440}};
+  wglib::render_layers::TextureRenderLayer textureRenderLayer{2560, 1440};
+
+  engine.SetTargetFPS(120.0);
+
+  std::function<void()> runIteration;
+
+  runIteration = [&]() {
+    engine.PushComputeLayer(compute, [&](const void *data) {
+      auto texture = reinterpret_cast<const wgpu::Texture *>(data);
+      textureRenderLayer.setTexture(const_cast<wgpu::Texture *>(texture));
+      runIteration();
+    });
+  };
+
+  engine.OnUpdate([&](const double) { engine.Draw(textureRenderLayer); });
+
+  runIteration();
+
+  engine.Start();
+}
+int main() { runConwaysGameOfLife(); }

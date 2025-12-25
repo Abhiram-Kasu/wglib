@@ -41,6 +41,7 @@ if (EMSCRIPTEN)
         "-sUSE_GLFW=3"
         "-sALLOW_MEMORY_GROWTH=1"
         "--preload-file=${CMAKE_SOURCE_DIR}/src/shaders@/src/shaders"
+        "--shell-file=${CMAKE_SOURCE_DIR}/shell.html"
     )
 else ()
     target_link_libraries(wglib PRIVATE webgpu_dawn webgpu_glfw glfw)

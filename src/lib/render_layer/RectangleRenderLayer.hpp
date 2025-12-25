@@ -41,8 +41,7 @@ public:
   auto Render(wgpu::RenderPassEncoder &renderPassEncoder) const
       -> void override;
 
-  auto UpdateRes(wgpu::CommandEncoder &commandEncoder,
-                 const wgpu::Device &device) const -> void override;
+  auto UpdateRes(const wgpu::Device &device) const -> void override;
 
   auto getPosition() const -> glm::vec2;
 

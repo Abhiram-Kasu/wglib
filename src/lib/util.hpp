@@ -37,12 +37,11 @@ void log(std::format_string<Args...> fmt, Args &&...args) {
 }
 
 inline void log(std::string_view msg) { util::log("{}", msg); }
-inline auto dispatchSizeCeil(size_t total_elements, size_t workgroup_size)
-    -> size_t {
-  if (workgroup_size == 0)
+template <typename T> inline auto divCeil(T dividend, T divisor) -> T {
+  if (divisor == 0)
     return 0; // Avoid division by zero
   // The formula: (dividend + divisor - 1) / divisor
-  return (total_elements + workgroup_size - 1) / workgroup_size;
+  return (dividend + divisor - 1) / divisor;
 }
 
 inline auto readFile(std::string_view path) -> std::string {

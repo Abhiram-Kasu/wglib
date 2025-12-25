@@ -4,7 +4,9 @@
 #include "lib/compute/ComputeLayer.hpp"
 #include "lib/render_layer/RenderLayer.hpp"
 #include <concepts>
+#include <cstddef>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <webgpu/webgpu_cpp.h>
 
@@ -21,6 +23,8 @@ class Engine {
   std::unique_ptr<Renderer> m_renderer;
   std::function<void(double)> m_update_function;
   double m_last_frame_time{0.0f};
+  double m_target_frame_time{0.0};
+  double m_accumulator{0.0};
 
   auto render() -> void;
   auto update_frame(double delta) -> void;
@@ -36,12 +40,18 @@ public:
     m_update_function = function;
   }
 
+  auto SetTargetFPS(double fps) -> void {
+    m_target_frame_time = fps > 0.0 ? 1.0 / fps : 0.0;
+  }
+
   auto Draw(std::derived_from<render_layers::RenderLayer> auto &renderLayer)
       -> void {
     m_renderer->pushRenderLayer(renderLayer);
   }
 
-  auto PushComputeLayer(compute::ComputeLayer &computeLayer)
-      -> compute::ComputeEngine::ComputeHandle &;
+  auto
+  PushComputeLayer(compute::ComputeLayer &computeLayer,
+                   std::optional<std::function<void(const void *)>> onComplete =
+                       std::nullopt) -> compute::ComputeEngine::ComputeHandle &;
 };
 } // namespace wglib

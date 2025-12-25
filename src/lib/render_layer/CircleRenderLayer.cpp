@@ -126,8 +126,7 @@ auto CircleRenderLayer::InitRes(const wgpu::Device &device,
 
   m_isInitialized = true;
 }
-auto CircleRenderLayer::UpdateRes(wgpu::CommandEncoder &commandEncoder,
-                                  const wgpu::Device &device) const -> void {
+auto CircleRenderLayer::UpdateRes(const wgpu::Device &device) const -> void {
   auto queue = device.GetQueue();
 
   if (m_vertex_buffer.GetSize() < sizeof(Vertex) * m_vertices.size() or

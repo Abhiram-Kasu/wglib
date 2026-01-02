@@ -6,7 +6,7 @@ A modern C++23 library for creating 2D graphics and compute applications using W
 
 - **Cross-platform rendering**: Write once, run on desktop (via Dawn) or web (via Emscripten)
 - **WebGPU-based**: Modern GPU API with compute shader support
-- **2D rendering primitives**: Built-in support for rectangles and circles
+- **2D rendering primitives**: Built-in support for rectangles, circles, and textures
 - **Compute layers**: Run GPU compute shaders for parallel processing
 - **Update loop**: Simple callback-based update cycle for animations and game logic
 - **Modern C++23**: Leverages latest C++ features for clean, expressive code

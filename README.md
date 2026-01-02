@@ -110,16 +110,19 @@ Compute layers allow you to run GPU compute shaders for parallel processing. The
 class MyComputeLayer : public wglib::compute::ComputeLayer {
 protected:
   // Initialize GPU resources (buffers, pipelines, bind groups)
+  // This pure virtual method must be implemented
   auto InitImpl(wgpu::Device& device) -> void override {
     // Create buffers, compute pipeline, bind groups
   }
   
   // Perform the compute operation
+  // This pure virtual method must be implemented
   auto ComputeImpl(wgpu::CommandEncoder& encoder, wgpu::Queue& queue) -> void override {
     // Encode compute pass and submit work
   }
   
   // Return pointer to result data
+  // This pure virtual method must be implemented
   auto getResultImpl() -> const void* override {
     // Return pointer to result (e.g., buffer data, texture)
     return &myResult;

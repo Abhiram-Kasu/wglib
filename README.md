@@ -173,6 +173,7 @@ TextureRenderLayer is particularly useful for visualizing compute shader output:
 wglib::render_layers::TextureRenderLayer textureLayer{800, 600};
 
 // Push a compute layer that generates a texture
+// The callback parameter is optional - can also use handle.onComplete() separately
 engine.PushComputeLayer(myComputeLayer, [&](const void* data) {
   // Get the texture from compute result
   auto* texture = reinterpret_cast<const wgpu::Texture*>(data);

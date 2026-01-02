@@ -1,5 +1,5 @@
 #include "ExampleLayer.hpp"
-#include "lib/Util.hpp"
+#include "lib/CoreUtil.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include <ranges>
 #include <vector>

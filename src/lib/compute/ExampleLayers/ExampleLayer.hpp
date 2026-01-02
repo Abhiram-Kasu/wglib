@@ -1,5 +1,5 @@
 
-#include "../ComputeLayer.hpp"
+#include "lib/compute/ComputeLayer.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include <atomic>
 namespace wglib::compute {

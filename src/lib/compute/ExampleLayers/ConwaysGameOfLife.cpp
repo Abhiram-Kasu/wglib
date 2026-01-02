@@ -1,9 +1,8 @@
 #include "ConwaysGameOfLife.hpp"
-#include "lib/Util.hpp"
+#include "lib/CoreUtil.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include <cstddef>
 #include <cstdlib>
-#include <type_traits>
 #include <utility>
 
 namespace wglib::compute {

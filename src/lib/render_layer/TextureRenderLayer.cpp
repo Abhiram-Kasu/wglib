@@ -1,5 +1,5 @@
 #include "TextureRenderLayer.hpp"
-#include "../Util.hpp"
+#include "lib/CoreUtil.hpp"
 #include <vector>
 
 namespace wglib::render_layers {

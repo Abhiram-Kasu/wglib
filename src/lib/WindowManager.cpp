@@ -1,6 +1,6 @@
 #include "WindowManager.hpp"
 
-#include "Util.hpp"
+#include "CoreUtil.hpp"
 #include <iostream>
 
 #ifndef __EMSCRIPTEN__

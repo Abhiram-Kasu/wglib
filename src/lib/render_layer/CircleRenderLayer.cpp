@@ -4,10 +4,10 @@
 
 #include "CircleRenderLayer.hpp"
 #include "glm/ext/scalar_constants.hpp"
-#include "lib/Util.hpp"
+#include "lib/CoreUtil.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include <__ostream/print.h>
 #include <cassert>
+#include <print>
 #include <ranges>
 
 namespace wglib::render_layers {

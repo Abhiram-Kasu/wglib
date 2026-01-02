@@ -9,8 +9,8 @@
 
 #include "GLFW/glfw3.h"
 #include "glm/common.hpp"
-#include "lib/Engine.hpp"
-#include "lib/Util.hpp"
+#include "lib/CoreEngine.hpp"
+#include "lib/CoreUtil.hpp"
 
 #include "lib/compute/ExampleLayers/ConwaysGameOfLife.hpp"
 #include "lib/compute/ExampleLayers/ExampleLayer.hpp"

@@ -2,11 +2,11 @@
 // Created by Abhiram Kasu on 11/27/25.
 //
 
-#include "Renderer.hpp"
+#include "CoreRenderer.hpp"
 
-#include <__ranges/views.h>
+#include <ranges>
 
-#include "Util.hpp"
+#include "CoreUtil.hpp"
 #include "webgpu/webgpu_cpp.h"
 
 namespace wglib {

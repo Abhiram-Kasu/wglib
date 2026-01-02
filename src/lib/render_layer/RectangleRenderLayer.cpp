@@ -7,7 +7,7 @@
 #include <print>
 
 #include "Vertex.hpp"
-#include "lib/Util.hpp"
+#include "lib/CoreUtil.hpp"
 
 namespace wglib::render_layers {
 std::optional<wgpu::RenderPipeline> RectangleRenderLayer::m_render_pipeline{

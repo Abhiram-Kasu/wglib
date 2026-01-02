@@ -1,9 +1,8 @@
-#include "Engine.hpp"
+#include "CoreEngine.hpp"
+#include "CoreUtil.hpp"
 #include "GLFW/glfw3.h"
-#include "Util.hpp"
 #include "lib/compute/ComputeEngine.hpp"
 
-#include <iostream>
 #include <memory>
 #ifndef __EMSCRIPTEN__
 #include <webgpu/webgpu_cpp_print.h>
@@ -12,7 +11,6 @@
 #include <emscripten.h>
 #endif
 
-#include "Renderer.hpp"
 #include "webgpu/webgpu_cpp.h"
 
 namespace wglib {
@@ -46,6 +44,12 @@ Engine::Engine(glm::vec2 size, std::string_view title) : m_window_size(size) {
   // exit(1);
 
   wgpu::DeviceDescriptor desc{};
+  desc.SetDeviceLostCallback(
+      wgpu::CallbackMode::AllowSpontaneous,
+      [](const wgpu::Device &, wgpu::DeviceLostReason reason,
+         wgpu::StringView stringView) {
+        util::log("Lost device with reason: {} -> {}", reason, stringView.data);
+      });
   desc.SetUncapturedErrorCallback([](const wgpu::Device &,
                                      wgpu::ErrorType errorType,
                                      wgpu::StringView message) {

@@ -10,7 +10,7 @@
 #include <string_view>
 #include <webgpu/webgpu_cpp.h>
 
-#include "Renderer.hpp"
+#include "CoreRenderer.hpp"
 
 namespace wglib {
 class Engine {

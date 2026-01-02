@@ -2,9 +2,7 @@
 
 #include "ComputeLayer.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include <any>
 #include <functional>
-#include <memory>
 #include <queue>
 
 // Use case :

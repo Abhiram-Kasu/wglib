@@ -6,7 +6,7 @@ A modern C++23 library for creating 2D graphics and compute applications using W
 
 - **Cross-platform rendering**: Write once, run on desktop (via Dawn) or web (via Emscripten)
 - **WebGPU-based**: Modern GPU API with compute shader support
-- **2D rendering primitives**: Built-in support for rectangles and circles
+- **2D rendering primitives**: Built-in support for rectangles, circles, and textures
 - **Compute layers**: Run GPU compute shaders for parallel processing
 - **Update loop**: Simple callback-based update cycle for animations and game logic
 - **Modern C++23**: Leverages latest C++ features for clean, expressive code
@@ -101,45 +101,97 @@ int main() {
 
 ### Using Compute Layers
 
-Compute layers allow you to run GPU compute shaders for parallel processing:
+Compute layers allow you to run GPU compute shaders for parallel processing. They execute asynchronously and can return results through callbacks.
 
 ```cpp
 #include "lib/compute/ComputeLayer.hpp"
 
 // Define your compute layer by inheriting from ComputeLayer
 class MyComputeLayer : public wglib::compute::ComputeLayer {
-  // Implement required methods:
-  // - InitImpl(wgpu::Device&)
-  // - ComputeImpl(wgpu::CommandEncoder&, wgpu::Queue&)
-  // - getResultImpl()
+protected:
+  // Initialize GPU resources (buffers, pipelines, bind groups)
+  // This pure virtual method must be implemented
+  auto InitImpl(wgpu::Device& device) -> void override {
+    // Create buffers, compute pipeline, bind groups
+  }
+  
+  // Perform the compute operation
+  // This pure virtual method must be implemented
+  auto ComputeImpl(wgpu::CommandEncoder& encoder, wgpu::Queue& queue) -> void override {
+    // Encode compute pass and submit work
+  }
+  
+  // Return pointer to result data
+  // This pure virtual method must be implemented
+  auto getResultImpl() -> const void* override {
+    // Return pointer to result (e.g., buffer data, texture)
+    return &myResult;
+  }
 };
 
 // In your main function:
 MyComputeLayer myCompute{/* constructor args */};
+
+// Push compute layer and get a handle
 auto& handle = engine.PushComputeLayer(myCompute);
 
 // Set up callback for when compute completes
-handle.onComplete([](const void* buffer) {
+handle.onComplete([](const void* result) {
   // Process results
-  auto* data = reinterpret_cast<const float*>(buffer);
+  auto* data = reinterpret_cast<const float*>(result);
   // Use your data...
 });
 ```
 
+Compute layers are processed at the beginning of each frame, before rendering. You can queue multiple compute operations, and they will be executed in order.
+
 ### Render Layers
 
-The library provides two built-in render layer types:
+The library provides three built-in render layer types:
 
 - **RectangleRenderLayer**: Renders filled rectangles
-  - Methods: `setPosition()`, `setSize()`, `setColor()`, `getPosition()`, `getSize()`
+  - Constructor: `RectangleRenderLayer(glm::vec2 position, glm::vec2 size, glm::vec3 color)`
+  - Methods: `setPosition()`, `setSize()`, `setColor()`, `getPosition()`, `getSize()`, `getColor()`
   
 - **CircleRenderLayer**: Renders filled circles
-  - Methods: `setPosition()`, `setRadius()`, `setColor()`, `getRadius()`
+  - Constructor: `CircleRenderLayer(glm::vec2 origin, float radius, glm::vec3 color, uint32_t resolution = 50)`
+  - Methods: `setOrigin()`, `setRadius()`, `setColor()`, `setResolution()`, `getOrigin()`, `getRadius()`, `getColor()`, `getResolution()`
+
+- **TextureRenderLayer**: Renders GPU textures to the screen
+  - Constructor: `TextureRenderLayer(float width, float height)` or `TextureRenderLayer(wgpu::Texture* texture, float width, float height)`
+  - Methods: `setTexture(wgpu::Texture*)`, `getTexture()`
+  - Useful for displaying results from compute shaders or rendering framebuffers
+
+#### Using TextureRenderLayer with Compute
+
+TextureRenderLayer is particularly useful for visualizing compute shader output:
+
+```cpp
+#include "lib/render_layer/TextureRenderLayer.hpp"
+
+// Create a texture render layer
+wglib::render_layers::TextureRenderLayer textureLayer{800, 600};
+
+// Push a compute layer that generates a texture
+// The callback parameter is optional - can also use handle.onComplete() separately
+engine.PushComputeLayer(myComputeLayer, [&](const void* data) {
+  // Get the texture from compute result
+  auto* texture = reinterpret_cast<const wgpu::Texture*>(data);
+  textureLayer.setTexture(const_cast<wgpu::Texture*>(texture));
+});
+
+// Draw the texture
+engine.OnUpdate([&](const double deltaTime) {
+  engine.Draw(textureLayer);
+});
+```
+
+#### Creating Custom Render Layers
 
 You can create custom render layers by inheriting from `RenderLayer` and implementing:
-- `Render()` - Rendering logic
-- `InitRes()` - Resource initialization
-- `UpdateRes()` - Resource updates
+- `Render(wgpu::RenderPassEncoder&)` - Rendering logic
+- `InitRes(wgpu::Device&, wgpu::TextureFormat, wgpu::BindGroupLayout&)` - Resource initialization
+- `UpdateRes(wgpu::Device&)` - Resource updates (called each frame if needed)
 
 ## How It Works
 
@@ -147,30 +199,35 @@ You can create custom render layers by inheriting from `RenderLayer` and impleme
 
 wglib is built on several core components:
 
-1. **Engine**: The main orchestrator that manages the update loop, rendering, and compute operations
+1. **Engine** (`CoreEngine.hpp/cpp`): The main orchestrator that manages the update loop, rendering, and compute operations
    - Initializes WebGPU device and adapter
    - Manages window creation through WindowManager
    - Coordinates rendering via the Renderer
    - Handles compute operations through ComputeEngine
+   - Provides frame rate control with `SetTargetFPS()`
 
-2. **Renderer**: Manages the rendering pipeline
-   - Creates and manages render pipelines
+2. **Renderer** (`CoreRenderer.hpp/cpp`): Manages the rendering pipeline
+   - Creates and manages render pipelines for each layer type
    - Handles render pass encoding
-   - Maintains bind groups for uniforms
+   - Maintains uniform buffers for screen size and other global data
+   - Calls `Render()` on all queued render layers each frame
 
 3. **WindowManager**: Platform abstraction for window creation
-   - Uses GLFW for desktop
-   - Integrates with Emscripten for web
+   - Uses GLFW for desktop platforms
+   - Integrates with Emscripten for web builds
+   - Manages surface creation and presentation
 
 4. **ComputeEngine**: Manages GPU compute operations
-   - Executes compute shaders
-   - Handles result callbacks
-   - Manages compute pipelines and buffers
+   - Executes compute shaders through ComputeLayer instances
+   - Handles result callbacks asynchronously
+   - Processes compute queue at the start of each frame
+   - Returns compute results via callback mechanism
 
 5. **Render Layers**: Modular rendering units
-   - Each layer manages its own GPU resources
-   - Vertex/index buffers for geometry
+   - Each layer manages its own GPU resources (buffers, pipelines, bind groups)
+   - Shared render pipelines across instances of the same layer type
    - Separate shader pipelines per layer type
+   - Support for both geometry-based (rectangles, circles) and texture-based rendering
 
 ### Update Cycle
 
@@ -184,13 +241,13 @@ The engine runs a continuous update loop:
            │
            ▼
 ┌─────────────────────────────┐
-│  Render Frame               │
-│  (Draw all render layers)   │
+│  Process WebGPU Events      │
 └──────────┬──────────────────┘
            │
            ▼
 ┌─────────────────────────────┐
-│  Process WebGPU Events      │
+│  Render Frame               │
+│  (Draw all render layers)   │
 └──────────┬──────────────────┘
            │
            ▼
@@ -201,6 +258,12 @@ The engine runs a continuous update loop:
            │
            └──> (repeat)
 ```
+
+Each frame:
+1. Compute layers are processed first, allowing compute shaders to prepare data
+2. WebGPU events are processed (device callbacks, errors, etc.)
+3. Render layers are drawn to the screen
+4. User's OnUpdate callback is invoked for game/application logic
 
 ### WebGPU Integration
 
@@ -214,26 +277,31 @@ The engine runs a continuous update loop:
 ```
 wglib/
 ├── src/
-│   ├── main.cpp              # Example application
+│   ├── main.cpp                 # Example application
 │   ├── lib/
-│   │   ├── Engine.hpp/cpp    # Main engine
-│   │   ├── Renderer.hpp/cpp  # Rendering system
-│   │   ├── WindowManager.*   # Window management
-│   │   ├── Util.hpp          # Utility functions
-│   │   ├── render_layer/     # Render layer implementations
+│   │   ├── CoreEngine.hpp/cpp   # Main engine
+│   │   ├── CoreRenderer.hpp/cpp # Rendering system
+│   │   ├── CoreUtil.hpp         # Utility functions
+│   │   ├── WindowManager.*      # Window management
+│   │   ├── render_layer/        # Render layer implementations
 │   │   │   ├── RenderLayer.hpp
 │   │   │   ├── RectangleRenderLayer.*
 │   │   │   ├── CircleRenderLayer.*
+│   │   │   ├── TextureRenderLayer.*
 │   │   │   └── Vertex.hpp
-│   │   └── compute/          # Compute system
+│   │   └── compute/             # Compute system
 │   │       ├── ComputeEngine.*
 │   │       ├── ComputeLayer.hpp
 │   │       └── ExampleLayers/
-│   └── shaders/              # WGSL shader files
-├── dawn/                     # Dawn WebGPU (submodule)
+│   └── shaders/                 # WGSL shader files
+│       ├── default.wgsl         # Default shader for shapes
+│       ├── texture.wgsl         # Texture rendering shader
+│       ├── example.wgsl         # Example compute shader
+│       └── ConwaysGameOfLife/   # Conway's Game of Life compute shaders
+├── dawn/                        # Dawn WebGPU (submodule)
 ├── scripts/
-│   └── build_web.sh          # Web build script
-└── CMakeLists.txt            # Build configuration
+│   └── build_web.sh             # Web build script
+└── CMakeLists.txt               # Build configuration
 ```
 
 ## Future TODO

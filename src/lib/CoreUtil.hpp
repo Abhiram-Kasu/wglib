@@ -4,6 +4,7 @@
 
 #pragma once
 #include "webgpu/webgpu_cpp.h"
+#include <iostream>
 #ifndef __EMSCRIPTEN__
 #include "webgpu/webgpu_cpp_print.h"
 #endif
@@ -17,7 +18,7 @@
 #include <type_traits>
 
 namespace std {
-// Formatter specifically for wgpu types
+#ifndef __EMSCRIPTEN__
 template <typename T>
   requires std::is_enum_v<T> && requires(std::ostream &os, const T &value) {
     { os << value } -> std::convertible_to<std::ostream &>;
@@ -29,6 +30,18 @@ struct formatter<T> : formatter<string> {
     return formatter<string>::format(oss.str(), ctx);
   }
 };
+#else
+// Formatter for wgpu enums without operator<< support since emcc headers dont
+// have webgpu_cpp_print.h
+template <typename T>
+  requires std::is_enum_v<T>
+struct formatter<T> : formatter<std::underlying_type_t<T>> {
+  auto format(const T &value, format_context &ctx) const {
+    return formatter<std::underlying_type_t<T>>::format(
+        static_cast<std::underlying_type_t<T>>(value), ctx);
+  }
+};
+#endif
 } // namespace std
 namespace wglib::util {
 template <typename... Args>
@@ -37,6 +50,7 @@ void log(std::format_string<Args...> fmt, Args &&...args) {
 }
 
 inline void log(std::string_view msg) { util::log("{}", msg); }
+
 template <typename T> inline auto divCeil(T dividend, T divisor) -> T {
   if (divisor == 0)
     return 0; // Avoid division by zero
@@ -112,7 +126,7 @@ wgpu::Buffer createBuffer(const wgpu::Device &device, uint64_t count,
 
   // Uniform buffers must be padded to 16 bytes
   if constexpr (Usage & wgpu::BufferUsage::Uniform) {
-    size = (size + 15) & ~uint64_t(15);
+    size = (size + 15) & ~uint64_t{15};
   }
 
   wgpu::BufferDescriptor desc{

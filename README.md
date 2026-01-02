@@ -15,7 +15,7 @@ A modern C++23 library for creating 2D graphics and compute applications using W
 
 ### Desktop Build
 - CMake 3.22 or higher
-- C++23 compatible compiler (GCC 13+, Clang 16+, or MSVC 2022+)
+- C++23 compatible compiler (GCC 13+, Clang 16+, or MSVC 2022+), Only tested with Clang however.
 - GLFW (fetched automatically)
 - Dawn WebGPU implementation (included as submodule)
 - GLM library (fetched automatically)
@@ -31,8 +31,9 @@ A modern C++23 library for creating 2D graphics and compute applications using W
 
 ```bash
 # Clone the repository with submodules
-git clone --recursive https://github.com/Abhiram-Kasu/wglib.git
-cd wglib
+git clone https://github.com/Abhiram-Kasu/wglib.git
+cd wglib 
+git submodule update --init
 ```
 
 ### Desktop Build
@@ -52,11 +53,10 @@ cmake --build .
 ### Web Build
 
 ```bash
-# Run the build script
-./scripts/build_web.sh
-
 # Serve the result (use any web server)
-cd build_web
+mkdir build_web && cd build_web
+emcmake cmake ..
+cmake --build .
 python3 -m http.server 8000
 # Open http://localhost:8000/wglib.html in your browser
 ```
@@ -66,7 +66,7 @@ python3 -m http.server 8000
 ### Basic Setup
 
 ```cpp
-#include "lib/Engine.hpp"
+#include "lib/CoreEngine.hpp"
 #include "lib/render_layer/CircleRenderLayer.hpp"
 #include "lib/render_layer/RectangleRenderLayer.hpp"
 
@@ -240,5 +240,3 @@ wglib/
 
 - Event processing
 - Manual Engine Tick Mode to control when the update cycle runs
-
-

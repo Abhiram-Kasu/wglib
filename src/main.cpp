@@ -99,7 +99,7 @@ auto runConwaysGameOfLife() {
 auto runParticleSimulation() {
   wglib::Engine engine({2560, 1440}, "title");
   wglib::compute::ParticleSimulationLayer particleSimulationLayer(
-      2000, {2560, 1440}, 2, {1, 0, 0, 1}, {500, 500}, 100, 0.016, 100, 0.98,
+      10000, {2560, 1440}, 2, {0, 1, 1, 1}, {500, 500}, 100, 0.016, 500, 0.98,
       2000, 50);
   wglib::render_layers::TextureRenderLayer textureRenderLayer{2560, 1440};
 

@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include <webgpu/webgpu_cpp.h>
 
 #include "CoreRenderer.hpp"
@@ -53,5 +54,11 @@ public:
   PushComputeLayer(compute::ComputeLayer &computeLayer,
                    std::optional<std::function<void(const void *)>> onComplete =
                        std::nullopt) -> compute::ComputeEngine::ComputeHandle &;
+  template <std::derived_from<render_layers::RenderLayer> T, typename... Args>
+  auto CreateRenderLayer(Args &&...args) {
+    auto renderLayer = T(std::forward<Args>(args)...);
+    m_renderer->initRenderLayer(renderLayer);
+    return renderLayer;
+  }
 };
 } // namespace wglib

@@ -12,6 +12,9 @@ add_executable(wglib ${SOURCES})
 
 # Configure Dawn options before adding subdirectory
 set(DAWN_FETCH_DEPENDENCIES ON)
+# Disable Dawn test targets; they require GLFW test wiring we don't need
+set(DAWN_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(TINT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
 if (EMSCRIPTEN)
     # Disable features not needed for Emscripten builds
@@ -27,7 +30,7 @@ if (EMSCRIPTEN)
     set(TINT_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
     set(TINT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(DAWN_USE_GLFW OFF CACHE BOOL "" FORCE)
-endif()
+endif ()
 
 add_subdirectory("dawn" EXCLUDE_FROM_ALL)
 
@@ -37,11 +40,11 @@ if (EMSCRIPTEN)
     # Embed shader files into the virtual file system
     # The --preload-file flag makes files available at runtime
     target_link_options(wglib PRIVATE
-        "-sASYNCIFY=1"
-        "-sUSE_GLFW=3"
-        "-sALLOW_MEMORY_GROWTH=1"
-        "--preload-file=${CMAKE_SOURCE_DIR}/src/shaders@/src/shaders"
-        "--shell-file=${CMAKE_SOURCE_DIR}/shell.html"
+            "-sASYNCIFY=1"
+            "-sUSE_GLFW=3"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "--preload-file=${CMAKE_SOURCE_DIR}/src/shaders@/src/shaders"
+            "--shell-file=${CMAKE_SOURCE_DIR}/shell.html"
     )
 else ()
     target_link_libraries(wglib PRIVATE webgpu_dawn webgpu_glfw glfw)

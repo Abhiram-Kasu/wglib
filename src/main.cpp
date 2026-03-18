@@ -115,10 +115,17 @@ auto runParticleSimulation() {
     });
   };
 
-  engine.OnUpdate([&](const double) { engine.Draw(textureRenderLayer); });
+  engine.OnUpdate([&](auto) { engine.Draw(textureRenderLayer); });
 
   runIteration();
 
   engine.Start();
 }
-int main() { runParticleSimulation(); }
+
+auto refactorTest() {
+  wglib::Engine engine{{500, 500}, "Game"};
+  auto circleRenderLayer =
+      engine.CreateRenderLayer<wglib::render_layers::CircleRenderLayer>(
+          glm::vec2{250, 250}, 50.0f, glm::vec3{0.0f, 0.0f, 1.0f});
+}
+int main() { runConwaysGameOfLife(); }

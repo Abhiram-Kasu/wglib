@@ -1,4 +1,5 @@
 #pragma once
+#include <concepts>
 #include <functional>
 #include <webgpu/webgpu_cpp.h>
 
@@ -40,6 +41,12 @@ public:
   auto pushRenderLayer(render_layers::RenderLayer &renderLayer) -> void;
 
   auto Render(wgpu::SurfaceTexture &) -> void;
+
+  auto initRenderLayer(
+      std::derived_from<render_layers::RenderLayer> auto &renderLayer)
+      -> void const {
+    renderLayer.InitRes(m_device, m_format, m_bind_group_layout);
+  }
 
   ~Renderer();
 };

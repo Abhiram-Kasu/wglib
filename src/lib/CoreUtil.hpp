@@ -130,12 +130,11 @@ wgpu::Buffer createBuffer(const wgpu::Device &device, uint64_t count,
   }
 
   wgpu::BufferDescriptor desc{
-      .size = size,
       .usage = Usage,
+      .size = size,
       .mappedAtCreation = mappedAtCreation,
   };
 
   return device.CreateBuffer(&desc);
 }
-
 } // namespace wglib::util

@@ -45,14 +45,18 @@ auto ConwaysGameOfLifeComputeLayer::InitImpl(wgpu::Device &device) -> void {
 
     // Create texture
     const wgpu::TextureDescriptor texDesc{
+        .label = "ConwaysGameOfLifeTexture",
+        .usage = wgpu::TextureUsage::CopyDst | wgpu::TextureUsage::CopySrc |
+                 wgpu::TextureUsage::TextureBinding |
+                 wgpu::TextureUsage::StorageBinding,
         .dimension = wgpu::TextureDimension::e2D,
         .size = {static_cast<uint32_t>(m_size.x),
                  static_cast<uint32_t>(m_size.y), 1},
         .format = wgpu::TextureFormat::RGBA8Unorm,
-        .usage = wgpu::TextureUsage::CopyDst | wgpu::TextureUsage::CopySrc |
-                 wgpu::TextureUsage::TextureBinding |
-                 wgpu::TextureUsage::StorageBinding,
-        .label = "ConwaysGameOfLifeTexture"};
+        .mipLevelCount = 1,
+        .sampleCount = 1,
+        .viewFormatCount = 0,
+        .viewFormats = nullptr};
     m_texture = device.CreateTexture(&texDesc);
     m_textureView = m_texture.CreateView();
 
@@ -71,12 +75,9 @@ auto ConwaysGameOfLifeComputeLayer::InitImpl(wgpu::Device &device) -> void {
       {.binding = 1, .buffer = *m_secBufferPointer},
       {.binding = 2, .textureView = m_textureView},
       {.binding = 3, .buffer = m_uniformBuffer}};
-  wgpu::BindGroupDescriptor desc{.entries = entries,
+  wgpu::BindGroupDescriptor desc{.layout = m_computePipeline.GetBindGroupLayout(0),
                                  .entryCount = 4,
-                                 .layout =
-                                     m_computePipeline.GetBindGroupLayout(0)
-
-  };
+                                 .entries = entries};
   m_bindGroup = device.CreateBindGroup(&desc);
 } // namespace wglib::compute::example_layers
 

@@ -41,10 +41,9 @@ auto ExampleLayer::initBindGroup(wgpu::Device &device) -> void {
   wgpu::BindGroupEntry entries[3]{{.binding = 0, .buffer = m_multiplierBuffer},
                                   {.binding = 1, .buffer = m_initalBuffer},
                                   {.binding = 2, .buffer = m_ResultBuffer}};
-  wgpu::BindGroupDescriptor desc{.entryCount = 3,
-                                 .entries = entries,
-                                 .layout =
-                                     m_computePipeline.GetBindGroupLayout(0)};
+  wgpu::BindGroupDescriptor desc{.layout = m_computePipeline.GetBindGroupLayout(0),
+                                 .entryCount = 3,
+                                 .entries = entries};
   m_bindGroup = device.CreateBindGroup(&desc);
 }
 

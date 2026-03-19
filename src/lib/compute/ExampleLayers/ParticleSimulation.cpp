@@ -76,13 +76,13 @@ auto ParticleSimulationLayer::InitImpl(wgpu::Device &device) -> void {
   m_circleBuffer2.Unmap();
 
   const wgpu::TextureDescriptor textureDesc{
-      .size = {static_cast<uint32_t>(m_size.x),
-               static_cast<uint32_t>(m_size.y)},
-      .format = wgpu::TextureFormat::RGBA8Unorm,
       .usage = wgpu::TextureUsage::RenderAttachment |
                wgpu::TextureUsage::StorageBinding |
                wgpu::TextureUsage::TextureBinding |
                wgpu::TextureUsage::CopySrc | wgpu::TextureUsage::CopyDst,
+      .size = {static_cast<uint32_t>(m_size.x),
+               static_cast<uint32_t>(m_size.y)},
+      .format = wgpu::TextureFormat::RGBA8Unorm,
   };
   m_drawTexture = device.CreateTexture(&textureDesc);
 
@@ -116,13 +116,13 @@ auto ParticleSimulationLayer::InitImpl(wgpu::Device &device) -> void {
       {.binding = 3, .textureView = m_drawTexture.CreateView()},
   };
   wgpu::BindGroupDescriptor bgDesc1{
-      .entries = entriesSet1,
+      .layout = m_computePipeline.GetBindGroupLayout(0),
       .entryCount = 4,
-      .layout = m_computePipeline.GetBindGroupLayout(0)};
+      .entries = entriesSet1};
   wgpu::BindGroupDescriptor bgDesc2{
-      .entries = entriesSet2,
+      .layout = m_computePipeline.GetBindGroupLayout(0),
       .entryCount = 4,
-      .layout = m_computePipeline.GetBindGroupLayout(0)};
+      .entries = entriesSet2};
 
   m_bg1 = device.CreateBindGroup(&bgDesc1);
   m_bg2 = device.CreateBindGroup(&bgDesc2);

@@ -33,10 +33,10 @@ auto Renderer::createBindGroupLayout() -> void {
 }
 
 auto Renderer::updateUniformBuffer() -> void {
-  wgpu::BufferDescriptor bufferDesc{.mappedAtCreation = true,
-                                    .usage = wgpu::BufferUsage::CopyDst |
+  wgpu::BufferDescriptor bufferDesc{.usage = wgpu::BufferUsage::CopyDst |
                                              wgpu::BufferUsage::Uniform,
-                                    .size = sizeof(Uniforms)};
+                                    .size = sizeof(Uniforms),
+                                    .mappedAtCreation = true};
   m_uniform_buffer = m_device.CreateBuffer(&bufferDesc);
   m_uniform_buffer.WriteMappedRange(0, &m_uniforms, sizeof(Uniforms));
   m_uniform_buffer.Unmap();

@@ -4,7 +4,8 @@
 #include <vector>
 namespace wglib::compute {
 
-class ConwaysGameOfLifeComputeLayer : public ComputeLayer {
+class ConwaysGameOfLifeComputeLayer
+    : public ComputeLayer<const wgpu::Texture &> {
 
   struct alignas(16) Uniform {
     uint32_t width, height;
@@ -16,7 +17,8 @@ private:
   wgpu::Texture m_texture;
   wgpu::TextureView m_textureView;
   wgpu::Buffer *m_currBufferPointer, *m_secBufferPointer;
-  wgpu::BindGroup m_bindGroup;
+  wgpu::BindGroup m_bindGroups[2];
+  uint8_t m_bindGroupIndex{0};
 
   bool m_init{false};
   std::vector<uint32_t> m_initalData;
@@ -27,7 +29,7 @@ public:
   ConwaysGameOfLifeComputeLayer(glm::vec2);
 
 protected:
-  auto getResultImpl() -> const void * override;
+  auto getResultImpl() -> const wgpu::Texture & override;
   auto InitImpl(wgpu::Device &device) -> void override;
   auto ComputeImpl(wgpu::CommandEncoder &e, wgpu::Queue &q) -> void override;
 };

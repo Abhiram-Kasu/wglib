@@ -4,12 +4,14 @@
 
 namespace wglib::render_layers {
 
-TextureRenderLayer::TextureRenderLayer(wgpu::Texture *texture, float width,
+TextureRenderLayer::TextureRenderLayer(wgpu::Texture texture, float width,
                                        float height)
-    : m_texture(texture), m_width(width), m_height(height), m_isDirty(true) {}
+    : m_texture(std::move(texture)), m_width(width), m_height(height),
+      m_isDirty(true) {}
 
 TextureRenderLayer::TextureRenderLayer(float width, float height)
-    : m_texture(nullptr), m_width(width), m_height(height), m_isDirty(true) {}
+    : m_texture(std::nullopt), m_width(width), m_height(height),
+      m_isDirty(true) {}
 
 TextureRenderLayer::~TextureRenderLayer() {
   if (m_vertexBuffer) {
@@ -176,12 +178,12 @@ auto TextureRenderLayer::UpdateRes(const wgpu::Device &device) const -> void {
   m_isDirty = false;
 }
 
-void TextureRenderLayer::setTexture(wgpu::Texture *texture) {
-  m_texture = texture;
+void TextureRenderLayer::setTexture(wgpu::Texture texture) {
+  m_texture = std::move(texture);
   m_isDirty = true;
 }
 
-auto TextureRenderLayer::getTexture() const -> wgpu::Texture * {
+auto TextureRenderLayer::getTexture() const -> std::optional<wgpu::Texture> {
   return m_texture;
 }
 

@@ -1,7 +1,7 @@
-#include <print>
 #include <any>
 #include <limits>
 #include <numbers>
+#include <print>
 #include <ranges>
 #include <span>
 #include <thread>
@@ -29,18 +29,21 @@ auto runComputeAndDrawingExample() {
   wglib::render_layers::CircleRenderLayer circle(glm::vec2{250, 250}, 50.0f,
                                                  glm::vec3{0.0f, 0.0f, 1.0f});
 
-  wglib::compute::ExampleLayer exampleLayer{50000, std::numbers::pi};
-  auto &handle = engine.PushComputeLayer(exampleLayer);
+  auto compute = engine.InitComputeLayer<wglib::compute::ExampleLayer<50000>>(
+      static_cast<float>(std::numbers::pi));
 
-  handle.onComplete([](const void *buffer) {
-    auto *items = reinterpret_cast<const float *>(buffer);
+  engine.PushComputeLayer(
+      compute, [](std::optional<std::span<const float, 50000>> res) {
+        if (not res) {
+          wglib::util::log("failed to get items");
+        } else {
+          auto span = *res;
+          for (const auto &item : span | std::ranges::views::take(10)) {
+            wglib::util::log("Item: {}", item);
+          }
+        }
+      });
 
-    std::span<const float, 50'000> span(items, 50'000);
-
-    for (const auto &item : span | std::ranges::views::take(10)) {
-      wglib::util::log("Item: {}", item);
-    }
-  });
   engine.OnUpdate([&](const double s) {
     engine.Draw(rect1);
     static auto velocity = glm::vec2{50};
@@ -75,7 +78,10 @@ auto runComputeAndDrawingExample() {
 
 auto runConwaysGameOfLife() {
   wglib::Engine engine({2560, 1440}, "title");
-  wglib::compute::ConwaysGameOfLifeComputeLayer compute{{2560, 1440}};
+
+  auto compute =
+      engine.InitComputeLayer<wglib::compute::ConwaysGameOfLifeComputeLayer>(
+          glm::vec2{2560, 1440});
   wglib::render_layers::TextureRenderLayer textureRenderLayer{2560, 1440};
 
   engine.SetTargetFPS(120.0);
@@ -83,9 +89,8 @@ auto runConwaysGameOfLife() {
   std::function<void()> runIteration;
 
   runIteration = [&]() {
-    engine.PushComputeLayer(compute, [&](const void *data) {
-      auto texture = reinterpret_cast<const wgpu::Texture *>(data);
-      textureRenderLayer.setTexture(const_cast<wgpu::Texture *>(texture));
+    engine.PushComputeLayer(compute, [&](wgpu::Texture texture) {
+      textureRenderLayer.setTexture(std::move(texture));
       runIteration();
     });
   };
@@ -96,11 +101,15 @@ auto runConwaysGameOfLife() {
 
   engine.Start();
 }
+
 auto runParticleSimulation() {
   wglib::Engine engine({2560, 1440}, "title");
-  wglib::compute::ParticleSimulationLayer particleSimulationLayer(
-      10000, {2560, 1440}, 2, {0, 1, 1, 1}, {500, 500}, 100, 0.016, 500, 0.98,
-      2000, 50);
+
+  auto compute =
+      engine.InitComputeLayer<wglib::compute::ParticleSimulationLayer>(
+          10000, glm::vec2{2560, 1440}, 2, glm::vec4{0, 1, 1, 1},
+          glm::vec2{500, 500}, 100, 0.016, 500, 0.98, 2000, 50);
+
   wglib::render_layers::TextureRenderLayer textureRenderLayer{2560, 1440};
 
   engine.SetTargetFPS(120.0);
@@ -108,9 +117,12 @@ auto runParticleSimulation() {
   std::function<void()> runIteration;
 
   runIteration = [&]() {
-    engine.PushComputeLayer(particleSimulationLayer, [&](const void *data) {
-      auto texture = reinterpret_cast<const wgpu::Texture *>(data);
-      textureRenderLayer.setTexture(const_cast<wgpu::Texture *>(texture));
+    engine.PushComputeLayer(compute, [&](std::optional<wgpu::Texture> res) {
+      if (not res) {
+        wglib::util::log("Failed to get results");
+        return;
+      }
+      textureRenderLayer.setTexture(std::move(*res));
       runIteration();
     });
   };
@@ -128,4 +140,5 @@ auto refactorTest() {
       engine.CreateRenderLayer<wglib::render_layers::CircleRenderLayer>(
           glm::vec2{250, 250}, 50.0f, glm::vec3{0.0f, 0.0f, 1.0f});
 }
-int main() { runConwaysGameOfLife(); }
+
+int main() { runComputeAndDrawingExample(); }

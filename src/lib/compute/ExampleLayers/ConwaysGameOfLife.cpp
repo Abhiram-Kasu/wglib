@@ -8,6 +8,8 @@
 namespace wglib::compute {
 ConwaysGameOfLifeComputeLayer::ConwaysGameOfLifeComputeLayer(glm::vec2 size)
     : m_size(size) {
+  // TODO remove
+  util::log("Constructed ");
   m_initalData.reserve(m_size.x * m_size.y);
   for (auto i{0uz}; i < m_size.x * m_size.y; ++i) {
     m_initalData.push_back(rand() % 2);
@@ -70,15 +72,33 @@ auto ConwaysGameOfLifeComputeLayer::InitImpl(wgpu::Device &device) -> void {
     m_init = true;
   }
 
-  wgpu::BindGroupEntry entries[4]{
-      {.binding = 0, .buffer = *m_currBufferPointer},
-      {.binding = 1, .buffer = *m_secBufferPointer},
-      {.binding = 2, .textureView = m_textureView},
-      {.binding = 3, .buffer = m_uniformBuffer}};
-  wgpu::BindGroupDescriptor desc{.layout = m_computePipeline.GetBindGroupLayout(0),
-                                 .entryCount = 4,
-                                 .entries = entries};
-  m_bindGroup = device.CreateBindGroup(&desc);
+  {
+    wgpu::BindGroupEntry entries[4]{
+        {.binding = 0, .buffer = m_firstBuffer},
+        {.binding = 1, .buffer = m_secondBuffer},
+        {.binding = 2, .textureView = m_textureView},
+        {.binding = 3, .buffer = m_uniformBuffer}};
+    wgpu::BindGroupDescriptor desc{.layout =
+                                       m_computePipeline.GetBindGroupLayout(0),
+                                   .entryCount = 4,
+                                   .entries = entries};
+    m_bindGroups[0] = device.CreateBindGroup(&desc);
+  }
+
+  {
+    wgpu::BindGroupEntry entries[4]{
+        {.binding = 0, .buffer = m_secondBuffer},
+        {.binding = 1, .buffer = m_firstBuffer},
+        {.binding = 2, .textureView = m_textureView},
+        {.binding = 3, .buffer = m_uniformBuffer}};
+    wgpu::BindGroupDescriptor desc{.layout =
+                                       m_computePipeline.GetBindGroupLayout(0),
+                                   .entryCount = 4,
+                                   .entries = entries};
+    m_bindGroups[1] = device.CreateBindGroup(&desc);
+  }
+
+  m_bindGroupIndex = 0;
 } // namespace wglib::compute::example_layers
 
 auto ConwaysGameOfLifeComputeLayer::ComputeImpl(wgpu::CommandEncoder &encoder,
@@ -86,7 +106,7 @@ auto ConwaysGameOfLifeComputeLayer::ComputeImpl(wgpu::CommandEncoder &encoder,
 
   auto computePass = encoder.BeginComputePass();
   computePass.SetPipeline(m_computePipeline);
-  computePass.SetBindGroup(0, m_bindGroup);
+  computePass.SetBindGroup(0, m_bindGroups[m_bindGroupIndex]);
 
   computePass.DispatchWorkgroups(
       util::divCeil(static_cast<size_t>(m_size.x), 8uz),
@@ -95,11 +115,11 @@ auto ConwaysGameOfLifeComputeLayer::ComputeImpl(wgpu::CommandEncoder &encoder,
   const auto commandBuffer = encoder.Finish();
   queue.Submit(1, &commandBuffer);
   Swap();
+  m_bindGroupIndex ^= 1;
 }
 
-auto ConwaysGameOfLifeComputeLayer::getResultImpl() -> const void * {
-
-  return &m_texture;
+auto ConwaysGameOfLifeComputeLayer::getResultImpl() -> const wgpu::Texture & {
+  return m_texture;
 }
 
 auto ConwaysGameOfLifeComputeLayer::Swap() -> void {

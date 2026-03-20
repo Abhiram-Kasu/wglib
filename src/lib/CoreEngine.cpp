@@ -139,12 +139,5 @@ auto Engine::render() -> void {
 #endif
 }
 
-auto Engine::PushComputeLayer(
-    compute::ComputeLayer &computeLayer,
-    std::optional<std::function<void(const void *)>> onComplete)
-    -> compute::ComputeEngine::ComputeHandle & {
-  return m_computeEngine->PushComputeLayer(computeLayer, onComplete);
-}
-
 Engine::~Engine() {}
 } // namespace wglib

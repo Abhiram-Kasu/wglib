@@ -7,7 +7,7 @@ namespace wglib::render_layers {
 
 class TextureRenderLayer : public RenderLayer {
 public:
-  TextureRenderLayer(wgpu::Texture *texture, float width, float height);
+  TextureRenderLayer(wgpu::Texture texture, float width, float height);
   TextureRenderLayer(float width, float height);
   ~TextureRenderLayer() override;
 
@@ -19,11 +19,12 @@ public:
 
   auto UpdateRes(const wgpu::Device &device) const -> void override;
 
-  void setTexture(wgpu::Texture *texture);
-  [[nodiscard]] auto getTexture() const -> wgpu::Texture *;
+  void setTexture(wgpu::Texture texture);
+  [[nodiscard]] auto getTexture() const -> std::optional<wgpu::Texture>;
 
 private:
-  wgpu::Texture *m_texture;
+  // optional so that can be lazy set later
+  std::optional<wgpu::Texture> m_texture;
   float m_width;
   float m_height;
 

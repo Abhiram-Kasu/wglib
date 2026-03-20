@@ -6,12 +6,14 @@
 #include "webgpu/webgpu_cpp.h"
 #include <atomic>
 namespace wglib::compute {
-class ParticleSimulationLayer : public ComputeLayer {
+class ParticleSimulationLayer
+    : public ComputeLayer<std::optional<wgpu::Texture>> {
   struct alignas(8) Particle {
-    glm::vec2 velocity;   // 8 bytes at offset 0
-    glm::vec2 position;   // 8 bytes at offset 8
-    float radius;         // 4 bytes at offset 16
-    float _padding;       // 4 bytes padding to make struct 24 bytes (WGSL array stride)
+    glm::vec2 velocity; // 8 bytes at offset 0
+    glm::vec2 position; // 8 bytes at offset 8
+    float radius;       // 4 bytes at offset 16
+    float
+        _padding; // 4 bytes padding to make struct 24 bytes (WGSL array stride)
   };
 
   struct alignas(16) CircleUniforms {
@@ -53,7 +55,7 @@ public:
                           float decayLength);
 
 protected:
-  virtual auto getResultImpl() -> const void *;
+  virtual auto getResultImpl() -> std::optional<wgpu::Texture>;
   virtual auto InitImpl(wgpu::Device &) -> void;
   virtual auto ComputeImpl(wgpu::CommandEncoder &e, wgpu::Queue &) -> void;
 };

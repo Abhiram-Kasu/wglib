@@ -6,37 +6,25 @@
 namespace wglib::compute {
 ComputeEngine::ComputeEngine(wgpu::Device &device) : m_device(device) {}
 
-auto ComputeEngine::PushComputeLayer(
-    ComputeLayer &computeLayer,
-    std::optional<std::function<void(const void *)>> onComplete)
-    -> ComputeHandle & {
-  computeLayer.Init(m_device);
-
-  m_computeQueue.push(ComputeHandle{computeLayer, onComplete});
-  return m_computeQueue.front();
-}
-
 auto ComputeEngine::Compute() -> void {
   auto queue = m_device.GetQueue();
 
   while (not m_computeQueue.empty()) {
-    auto &handle = m_computeQueue.front();
-    auto commandEncoder = m_device.CreateCommandEncoder();
-    handle.computeLayer.Compute(commandEncoder, queue);
-
-    auto userCallback = handle.m_onComplete;
-    auto &computeLayerRef = handle.computeLayer;
+    auto task = std::move(m_computeQueue.front());
 
     m_computeQueue.pop();
 
+    auto commandEncoder = m_device.CreateCommandEncoder();
+    task.layer->Compute(commandEncoder, queue);
+
     queue.OnSubmittedWorkDone(
         wgpu::CallbackMode::AllowProcessEvents,
-        [userCallback, &computeLayerRef](wgpu::QueueWorkDoneStatus status,
-                                         wgpu::StringView error) {
+        [callback = std::move(task.onComplete),
+         keepAlive = std::move(task.layer)](wgpu::QueueWorkDoneStatus status,
+                                            wgpu::StringView error) {
           if (status == wgpu::QueueWorkDoneStatus::Success) {
-            if (auto cb = userCallback.value_or(nullptr)) {
-              const void *result = computeLayerRef.getResult();
-              cb(result);
+            if (callback) {
+              callback();
             }
           } else {
             util::log("Compute work failed: {}", error.data);

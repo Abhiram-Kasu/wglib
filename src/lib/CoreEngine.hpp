@@ -50,10 +50,21 @@ public:
     m_renderer->pushRenderLayer(renderLayer);
   }
 
+  template <std::derived_from<compute::IComputeLayer> LayerType,
+            typename... Args>
+  auto InitComputeLayer(Args &&...args)
+      -> compute::ComputeEngine::ComputeLayerHandle<
+          typename LayerType::ResultType> {
+    return m_computeEngine->InitComputeLayer<LayerType>(
+        std::forward<Args>(args)...);
+  }
+  template <typename TResult, std::invocable<TResult> CB>
   auto
-  PushComputeLayer(compute::ComputeLayer &computeLayer,
-                   std::optional<std::function<void(const void *)>> onComplete =
-                       std::nullopt) -> compute::ComputeEngine::ComputeHandle &;
+  PushComputeLayer(compute::ComputeEngine::ComputeLayerHandle<TResult> &handle,
+                   CB &&onComplete) -> void {
+
+    m_computeEngine->PushComputeLayer(handle, std::forward<CB>(onComplete));
+  }
   template <std::derived_from<render_layers::RenderLayer> T, typename... Args>
   auto CreateRenderLayer(Args &&...args) {
     auto renderLayer = T(std::forward<Args>(args)...);

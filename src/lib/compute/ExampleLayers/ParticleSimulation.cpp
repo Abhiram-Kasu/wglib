@@ -115,25 +115,25 @@ auto ParticleSimulationLayer::InitImpl(wgpu::Device &device) -> void {
        .size = sizeof(CircleUniforms)},
       {.binding = 3, .textureView = m_drawTexture.CreateView()},
   };
-  wgpu::BindGroupDescriptor bgDesc1{
-      .layout = m_computePipeline.GetBindGroupLayout(0),
-      .entryCount = 4,
-      .entries = entriesSet1};
-  wgpu::BindGroupDescriptor bgDesc2{
-      .layout = m_computePipeline.GetBindGroupLayout(0),
-      .entryCount = 4,
-      .entries = entriesSet2};
+  wgpu::BindGroupDescriptor bgDesc1{.layout =
+                                        m_computePipeline.GetBindGroupLayout(0),
+                                    .entryCount = 4,
+                                    .entries = entriesSet1};
+  wgpu::BindGroupDescriptor bgDesc2{.layout =
+                                        m_computePipeline.GetBindGroupLayout(0),
+                                    .entryCount = 4,
+                                    .entries = entriesSet2};
 
   m_bg1 = device.CreateBindGroup(&bgDesc1);
   m_bg2 = device.CreateBindGroup(&bgDesc2);
 
   readyFlag.store(true, std::memory_order_release);
 }
-auto ParticleSimulationLayer::getResultImpl() -> const void * {
+auto ParticleSimulationLayer::getResultImpl() -> std::optional<wgpu::Texture> {
   if (readyFlag.load(std::memory_order_acquire)) {
-    return &m_drawTexture;
+    return m_drawTexture;
   } else {
-    return nullptr;
+    return std::nullopt;
   }
 }
 auto ParticleSimulationLayer::ComputeImpl(wgpu::CommandEncoder &encoder,

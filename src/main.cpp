@@ -4,6 +4,7 @@
 #include <print>
 #include <ranges>
 #include <span>
+#include <string>
 #include <thread>
 #include <type_traits>
 
@@ -21,10 +22,12 @@
 #include "webgpu/webgpu_cpp.h"
 
 auto runComputeAndDrawingExample() {
-  wglib::Engine engine({500, 500}, "title");
+  constexpr auto height = 1440uz;
+  constexpr auto width = 1440uz;
+  wglib::Engine engine(glm::vec2{height, width}, "title");
 
   wglib::render_layers::RectangleRenderLayer rect1(
-      glm::vec2{0, 0}, glm::vec2{100, 100}, glm::vec3{0.0f, 1.0f, 0.0f});
+      glm::vec2{10, 10}, glm::vec2{300, 300}, glm::vec3{0.0f, 1.0f, 0.0f});
 
   wglib::render_layers::CircleRenderLayer circle(glm::vec2{250, 250}, 50.0f,
                                                  glm::vec3{0.0f, 0.0f, 1.0f});
@@ -47,11 +50,11 @@ auto runComputeAndDrawingExample() {
   engine.OnUpdate([&](const double s) {
     engine.Draw(rect1);
     static auto velocity = glm::vec2{50};
-    if (rect1.getPosition().x + rect1.getSize().x > 500 or
+    if (rect1.getPosition().x + rect1.getSize().x > width or
         rect1.getPosition().x < 0) {
       velocity.x *= -1;
     }
-    if (rect1.getPosition().y + rect1.getSize().y > 500 or
+    if (rect1.getPosition().y + rect1.getSize().y > height or
         rect1.getPosition().y < 0) {
       velocity.y *= -1;
     }
@@ -141,4 +144,22 @@ auto refactorTest() {
           glm::vec2{250, 250}, 50.0f, glm::vec3{0.0f, 0.0f, 1.0f});
 }
 
-int main() { runComputeAndDrawingExample(); }
+int main(int argc, char **argv) {
+  if (argc == 2) {
+    switch (std::stoi(argv[1])) {
+    case 0:
+      runParticleSimulation();
+      break;
+    case 1:
+      refactorTest();
+      break;
+    case 2:
+      runConwaysGameOfLife();
+      break;
+    default:
+      runComputeAndDrawingExample();
+    }
+  } else {
+    runConwaysGameOfLife();
+  }
+}

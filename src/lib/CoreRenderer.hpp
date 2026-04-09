@@ -6,48 +6,57 @@
 #include "glm/ext/vector_float2.hpp"
 #include "render_layer/RenderLayer.hpp"
 
-namespace wglib {
+namespace wglib
+{
 
-struct Uniforms {
-  glm::vec2 screen_size;
+struct alignas(16) Uniforms
+{
+    glm::vec2 screen_size;
 };
 
 template <typename T>
 concept RenderableLayer = std::derived_from<T, render_layers::RenderLayer>;
 
-class Renderer {
-private:
-  const wgpu::Instance &m_instance;
-  const wgpu::Adapter &m_adapter;
-  const wgpu::Device &m_device;
-  const wgpu::TextureFormat m_format;
+class Renderer
+{
+  private:
+    const wgpu::Instance &m_instance;
+    const wgpu::Adapter &m_adapter;
+    const wgpu::Device &m_device;
+    const wgpu::TextureFormat m_format;
 
-  std::vector<std::reference_wrapper<const render_layers::RenderLayer>>
-      m_render_layers{};
+    std::vector<std::reference_wrapper<const render_layers::RenderLayer>> m_render_layers{};
 
-  Uniforms m_uniforms;
-  wgpu::Buffer m_uniform_buffer;
-  wgpu::BindGroupLayout m_bind_group_layout;
+    Uniforms m_uniforms;
+    bool m_uniforms_dirty;
+    wgpu::Buffer m_uniform_buffer;
+    wgpu::BindGroupLayout m_bind_group_layout;
 
-  auto updateUniformBuffer() -> void;
+    auto updateUniformBuffer(wgpu::CommandEncoder &encoder) -> void;
 
-  auto createBindGroupLayout() -> void;
+    auto createAndInitUniformBuffer() -> void;
 
-public:
-  Renderer(const wgpu::Instance &instance, wgpu::Adapter &adapter,
-           wgpu::Device &device, wgpu::TextureFormat format,
-           glm::vec2 screenSize);
+    auto createBindGroupLayout() -> void;
 
-  auto pushRenderLayer(render_layers::RenderLayer &renderLayer) -> void;
+  public:
+    Renderer(const wgpu::Instance &instance, wgpu::Adapter &adapter, wgpu::Device &device, wgpu::TextureFormat format,
+             glm::vec2 screenSize);
 
-  auto Render(wgpu::SurfaceTexture &) -> void;
+    auto pushRenderLayer(render_layers::RenderLayer &renderLayer) -> void;
 
-  auto initRenderLayer(
-      std::derived_from<render_layers::RenderLayer> auto &renderLayer)
-      -> void const {
-    renderLayer.InitRes(m_device, m_format, m_bind_group_layout);
-  }
+    auto Render(wgpu::SurfaceTexture &) -> void;
 
-  ~Renderer();
+    auto initRenderLayer(std::derived_from<render_layers::RenderLayer> auto &renderLayer) -> void const
+    {
+        renderLayer.InitRes(m_device, m_format, m_bind_group_layout);
+    }
+
+    auto setUniforms(const Uniforms &value) -> void
+    {
+        m_uniforms = value;
+        m_uniforms_dirty = true;
+    }
+
+    ~Renderer();
 };
 } // namespace wglib

@@ -17,124 +17,135 @@
 #include <string_view>
 #include <type_traits>
 
-namespace std {
+namespace std
+{
 #ifndef __EMSCRIPTEN__
 template <typename T>
-  requires std::is_enum_v<T> && requires(std::ostream &os, const T &value) {
-    { os << value } -> std::convertible_to<std::ostream &>;
-  }
-struct formatter<T> : formatter<string> {
-  auto format(const T &value, format_context &ctx) const {
-    std::stringstream oss;
-    oss << value;
-    return formatter<string>::format(oss.str(), ctx);
-  }
+    requires std::is_enum_v<T> && requires(std::ostream &os, const T &value) {
+        { os << value } -> std::convertible_to<std::ostream &>;
+    }
+struct formatter<T> : formatter<string>
+{
+    auto format(const T &value, format_context &ctx) const
+    {
+        std::stringstream oss;
+        oss << value;
+        return formatter<string>::format(oss.str(), ctx);
+    }
 };
 #else
 // Formatter for wgpu enums without operator<< support since emcc headers dont
 // have webgpu_cpp_print.h
 template <typename T>
-  requires std::is_enum_v<T>
-struct formatter<T> : formatter<std::underlying_type_t<T>> {
-  auto format(const T &value, format_context &ctx) const {
-    return formatter<std::underlying_type_t<T>>::format(
-        static_cast<std::underlying_type_t<T>>(value), ctx);
-  }
+    requires std::is_enum_v<T>
+struct formatter<T> : formatter<std::underlying_type_t<T>>
+{
+    auto format(const T &value, format_context &ctx) const
+    {
+        return formatter<std::underlying_type_t<T>>::format(static_cast<std::underlying_type_t<T>>(value), ctx);
+    }
 };
 #endif
 } // namespace std
-namespace wglib::util {
-template <typename... Args>
-void log(std::format_string<Args...> fmt, Args &&...args) {
-  std::println(fmt, std::forward<Args>(args)...);
+namespace wglib::util
+{
+template <typename... Args> void log(std::format_string<Args...> fmt, Args &&...args)
+{
+    std::println(fmt, std::forward<Args>(args)...);
 }
 
-inline void log(std::string_view msg) { util::log("{}", msg); }
-
-template <typename T> inline auto divCeil(T dividend, T divisor) -> T {
-  if (divisor == 0)
-    return 0; // Avoid division by zero
-  // The formula: (dividend + divisor - 1) / divisor
-  return (dividend + divisor - 1) / divisor;
+inline void log(std::string_view msg)
+{
+    util::log("{}", msg);
 }
 
-inline auto readFile(std::string_view path) -> std::string {
+template <typename T> inline auto divCeil(T dividend, T divisor) -> T
+{
+    if (divisor == 0)
+        return 0; // Avoid division by zero
+    // The formula: (dividend + divisor - 1) / divisor
+    return (dividend + divisor - 1) / divisor;
+}
+
+inline auto readFile(std::string_view path) -> std::string
+{
 #ifdef __EMSCRIPTEN__
-  // For Emscripten, convert relative paths to absolute virtual filesystem paths
-  std::string adjusted_path(path);
-  if (adjusted_path.starts_with("../")) {
-    adjusted_path = adjusted_path.substr(3); // Remove "../"
-    adjusted_path = "/" + adjusted_path;
-  }
-  std::ifstream f(adjusted_path, std::ios::binary);
+    // For Emscripten, convert relative paths to absolute virtual filesystem paths
+    std::string adjusted_path(path);
+    if (adjusted_path.starts_with("../"))
+    {
+        adjusted_path = adjusted_path.substr(3); // Remove "../"
+        adjusted_path = "/" + adjusted_path;
+    }
+    std::ifstream f(adjusted_path, std::ios::binary);
 #else
-  std::ifstream f(path.data(), std::ios::binary);
+    std::ifstream f(path.data(), std::ios::binary);
 #endif
-  if (!f) {
+    if (!f)
+    {
 #ifdef __EMSCRIPTEN__
-    util::log("Could not open file: {} (adjusted: {})", path, adjusted_path);
+        util::log("Could not open file: {} (adjusted: {})", path, adjusted_path);
 #else
-    util::log("Could not open file: {}", path);
+        util::log("Could not open file: {}", path);
 #endif
-    std::exit(EXIT_FAILURE);
-  }
+        std::exit(EXIT_FAILURE);
+    }
 
-  // Seek → size → read. Fast, minimal allocations.
-  f.seekg(0, std::ios::end);
-  const auto size = f.tellg();
-  f.seekg(0, std::ios::beg);
+    // Seek → size → read. Fast, minimal allocations.
+    f.seekg(0, std::ios::end);
+    const auto size = f.tellg();
+    f.seekg(0, std::ios::beg);
 
-  std::string contents;
-  contents.resize(size);
-  f.read(contents.data(), contents.size());
+    std::string contents;
+    contents.resize(size);
+    f.read(contents.data(), contents.size());
 
-  return contents;
+    return contents;
 }
 
-inline auto createShaderModuleFromFile(std::string_view path,
-                                       const wgpu::Device &device)
-    -> wgpu::ShaderModule {
-  const auto shaderCode = readFile(path);
-  wgpu::ShaderSourceWGSL wgsl{{.code = shaderCode.c_str()}};
-  wgpu::ShaderModuleDescriptor shaderModuleDescriptor{.nextInChain = &wgsl};
-  return device.CreateShaderModule(&shaderModuleDescriptor);
+inline auto createShaderModuleFromFile(std::string_view path, const wgpu::Device &device) -> wgpu::ShaderModule
+{
+    const auto shaderCode = readFile(path);
+    wgpu::ShaderSourceWGSL wgsl{{.code = shaderCode.c_str()}};
+    wgpu::ShaderModuleDescriptor shaderModuleDescriptor{.nextInChain = &wgsl};
+    return device.CreateShaderModule(&shaderModuleDescriptor);
 }
 
 template <typename T, wgpu::BufferUsage Usage>
-wgpu::Buffer createBuffer(const wgpu::Device &device, uint64_t count,
-                          bool mappedAtCreation = false) {
-  // Uniform buffers
-  if constexpr (Usage & wgpu::BufferUsage::Uniform) {
-    static_assert(alignof(T) >= 16,
-                  "Uniform buffer types must be at least 16-byte aligned");
-  }
+wgpu::Buffer createBuffer(const wgpu::Device &device, uint64_t count, bool mappedAtCreation = false)
+{
+    // Uniform buffers
+    if constexpr (Usage & wgpu::BufferUsage::Uniform)
+    {
+        static_assert(alignof(T) >= 16, "Uniform buffer types must be at least 16-byte aligned");
+    }
 
-  // Storage buffers
-  if constexpr (Usage & wgpu::BufferUsage::Storage) {
-    static_assert(alignof(T) >= 4,
-                  "Storage buffer types must be at least 4-byte aligned");
-  }
+    // Storage buffers
+    if constexpr (Usage & wgpu::BufferUsage::Storage)
+    {
+        static_assert(alignof(T) >= 4, "Storage buffer types must be at least 4-byte aligned");
+    }
 
-  // Vertex buffers
-  if constexpr (Usage & wgpu::BufferUsage::Vertex) {
-    static_assert(
-        alignof(T) >= 4,
-        "Vertex buffer element types must be at least 4-byte aligned");
-  }
+    // Vertex buffers
+    if constexpr (Usage & wgpu::BufferUsage::Vertex)
+    {
+        static_assert(alignof(T) >= 4, "Vertex buffer element types must be at least 4-byte aligned");
+    }
 
-  auto size = sizeof(T) * count;
+    auto size = sizeof(T) * count;
 
-  // Uniform buffers must be padded to 16 bytes
-  if constexpr (Usage & wgpu::BufferUsage::Uniform) {
-    size = (size + 15) & ~uint64_t{15};
-  }
+    // Uniform buffers must be padded to 16 bytes
+    if constexpr (Usage & wgpu::BufferUsage::Uniform)
+    {
+        size = (size + 15) & ~uint64_t{15};
+    }
 
-  wgpu::BufferDescriptor desc{
-      .usage = Usage,
-      .size = size,
-      .mappedAtCreation = mappedAtCreation,
-  };
+    wgpu::BufferDescriptor desc{
+        .usage = Usage,
+        .size = size,
+        .mappedAtCreation = mappedAtCreation,
+    };
 
-  return device.CreateBuffer(&desc);
+    return device.CreateBuffer(&desc);
 }
 } // namespace wglib::util

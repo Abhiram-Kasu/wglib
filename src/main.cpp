@@ -13,7 +13,31 @@
 #include "lib/render_layer/CircleRenderLayer.hpp"
 #include "lib/render_layer/RectangleRenderLayer.hpp"
 #include "lib/render_layer/TextureRenderLayer.hpp"
+#include "lib/render_layer/TriangleRenderLayer.hpp"
 #include "webgpu/webgpu_cpp.h"
+
+auto runSimpleTriangleExample()
+{
+    auto engine = wglib::Engine(glm::vec2{1000, 1000}, "triangle");
+
+    auto triangle = engine.CreateRenderLayer<wglib::render_layers::TriangleRenderLayer>(
+        std::array<wglib::render_layers::Vertex, 3>{wglib::render_layers::Vertex{
+                                                        .position = {1000.0f / 3, 1000 / 3 * 2},
+                                                        .color = {1, 0, 0},
+                                                    },
+                                                    wglib::render_layers::Vertex{
+                                                        .position = {1000.0f / 2, 1000 / 3},
+                                                        .color = {0, 1, 0},
+                                                    },
+                                                    wglib::render_layers::Vertex{
+                                                        .position = {1000.0f / 3 * 2, 1000 / 3 * 2},
+                                                        .color = {0, 0, 1},
+                                                    }});
+
+    engine.OnUpdate([&](auto dt) { engine.Draw(triangle); });
+
+    engine.Start();
+}
 
 auto runComputeAndDrawingExample()
 {
@@ -167,6 +191,9 @@ int main(int argc, char **argv)
             break;
         case 2:
             runConwaysGameOfLife();
+            break;
+        case 3:
+            runSimpleTriangleExample();
             break;
         default:
             runComputeAndDrawingExample();

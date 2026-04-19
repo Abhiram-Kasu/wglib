@@ -1,6 +1,7 @@
 #pragma once
 #include <concepts>
 #include <functional>
+#include <memory>
 #include <webgpu/webgpu_cpp.h>
 
 #include "glm/ext/vector_float2.hpp"
@@ -19,39 +20,78 @@ concept RenderableLayer = std::derived_from<T, render_layers::RenderLayer>;
 
 class Renderer
 {
+  public:
+    template <RenderableLayer Layer> struct Ref
+    {
+        // Read-only shared_ptr-like interface for everyone
+        Layer *operator->()
+        {
+            return layer.get();
+        }
+        const Layer &operator*() const
+        {
+            return *layer;
+        }
+        const Layer *get() const
+        {
+            return layer.get();
+        }
+
+        explicit operator bool() const
+        {
+            return layer != nullptr;
+        }
+
+      private:
+        friend Renderer;
+
+        const auto getLayer() const
+        {
+            return layer;
+        }
+        std::shared_ptr<Layer> layer;
+        explicit Ref(std::shared_ptr<Layer> l) : layer(std::move(l))
+        {
+        }
+    };
+
   private:
     const wgpu::Instance &m_instance;
     const wgpu::Adapter &m_adapter;
     const wgpu::Device &m_device;
     const wgpu::TextureFormat m_format;
 
-    std::vector<std::reference_wrapper<const render_layers::RenderLayer>> m_render_layers{};
+    std::vector<std::shared_ptr<const render_layers::RenderLayer>> m_render_layers{};
 
     Uniforms m_uniforms;
     bool m_uniforms_dirty;
     wgpu::Buffer m_uniform_buffer;
     wgpu::BindGroupLayout m_bind_group_layout;
 
-    auto updateUniformBuffer(wgpu::CommandEncoder &encoder) -> void;
+    auto UpdateUniformBuffer() -> void;
 
-    auto createAndInitUniformBuffer() -> void;
+    auto CreateAndInitUniformBuffer() -> void;
 
-    auto createBindGroupLayout() -> void;
+    auto CreateBindGroupLayout() -> void;
 
   public:
     Renderer(const wgpu::Instance &instance, wgpu::Adapter &adapter, wgpu::Device &device, wgpu::TextureFormat format,
              glm::vec2 screenSize);
-
-    auto pushRenderLayer(render_layers::RenderLayer &renderLayer) -> void;
+    template <std::derived_from<render_layers::RenderLayer> Layer> auto pushRenderLayer(Ref<Layer> &renderLayer) -> void
+    {
+        m_render_layers.push_back(renderLayer.getLayer());
+    }
 
     auto Render(wgpu::SurfaceTexture &) -> void;
 
-    auto initRenderLayer(std::derived_from<render_layers::RenderLayer> auto &renderLayer) -> void const
+    template <RenderableLayer Layer, typename... Args> auto CreateRenderLayer(Args &&...args) const -> Ref<Layer>
     {
-        renderLayer.InitRes(m_device, m_format, m_bind_group_layout);
+        auto layer = std::make_shared<Layer>(std::forward<Args>(args)...);
+        layer->InitRes(m_device, m_format, m_bind_group_layout);
+        return Ref<Layer>(layer);
     }
 
-    auto setUniforms(const Uniforms &value) -> void
+    auto SetUniforms(const Uniforms &value) -> void
     {
         m_uniforms = value;
         m_uniforms_dirty = true;

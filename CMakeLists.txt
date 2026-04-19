@@ -17,29 +17,32 @@ set(DAWN_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(TINT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
 if (EMSCRIPTEN)
-    # Disable features not needed for Emscripten builds
-    set(DAWN_ENABLE_D3D11 OFF CACHE BOOL "" FORCE)
-    set(DAWN_ENABLE_D3D12 OFF CACHE BOOL "" FORCE)
-    set(DAWN_ENABLE_METAL OFF CACHE BOOL "" FORCE)
-    set(DAWN_ENABLE_NULL OFF CACHE BOOL "" FORCE)
-    set(DAWN_ENABLE_DESKTOP_GL OFF CACHE BOOL "" FORCE)
-    set(DAWN_ENABLE_OPENGLES OFF CACHE BOOL "" FORCE)
-    set(DAWN_ENABLE_VULKAN OFF CACHE BOOL "" FORCE)
-    set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
-    set(DAWN_BUILD_NODE_BINDINGS OFF CACHE BOOL "" FORCE)
-    set(TINT_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
-    set(TINT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(DAWN_USE_GLFW OFF CACHE BOOL "" FORCE)
+
+  # Disable features not needed for Emscripten builds
+  set(DAWN_ENABLE_D3D11 OFF CACHE BOOL "" FORCE)
+  set(DAWN_ENABLE_D3D12 OFF CACHE BOOL "" FORCE)
+  set(DAWN_ENABLE_METAL OFF CACHE BOOL "" FORCE)
+  set(DAWN_ENABLE_NULL OFF CACHE BOOL "" FORCE)
+  set(DAWN_ENABLE_DESKTOP_GL OFF CACHE BOOL "" FORCE)
+  set(DAWN_ENABLE_OPENGLES OFF CACHE BOOL "" FORCE)
+  set(DAWN_ENABLE_VULKAN OFF CACHE BOOL "" FORCE)
+  set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+  set(DAWN_BUILD_NODE_BINDINGS OFF CACHE BOOL "" FORCE)
+  set(TINT_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+  set(TINT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(DAWN_USE_GLFW OFF CACHE BOOL "" FORCE)
 endif ()
 
 add_subdirectory("dawn" EXCLUDE_FROM_ALL)
 
 if (EMSCRIPTEN)
-    set_target_properties(wglib PROPERTIES SUFFIX ".html")
-    target_link_libraries(wglib PRIVATE emdawnwebgpu_cpp)
-    # Embed shader files into the virtual file system
-    # The --preload-file flag makes files available at runtime
-    target_link_options(wglib PRIVATE
+  set_target_properties(wglib PROPERTIES SUFFIX ".html")
+  target_link_libraries(wglib PRIVATE emdawnwebgpu_cpp)
+  # Embed shader files into the virtual file system
+  # The --preload-file flag makes files available at runtime
+  target_link_options(wglib PRIVATE
+            "-sEXPORTED_RUNTIME_METHODS=callMain"
+            "-sNO_EXIT_RUNTIME=1"
             "-sASYNCIFY=1"
             "-sUSE_GLFW=3"
             "-sALLOW_MEMORY_GROWTH=1"
@@ -47,7 +50,7 @@ if (EMSCRIPTEN)
             "--shell-file=${CMAKE_SOURCE_DIR}/shell.html"
     )
 else ()
-    target_link_libraries(wglib PRIVATE webgpu_dawn webgpu_glfw glfw)
+  target_link_libraries(wglib PRIVATE webgpu_dawn webgpu_glfw glfw)
 endif ()
 
 # Add src directory to include path

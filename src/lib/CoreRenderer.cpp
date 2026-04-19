@@ -15,11 +15,11 @@ Renderer::Renderer(const wgpu::Instance &instance, wgpu::Adapter &adapter, wgpu:
                    wgpu::TextureFormat format, glm::vec2 screenSize)
     : m_instance(instance), m_adapter(adapter), m_device(device), m_format(format), m_uniforms(screenSize)
 {
-    createBindGroupLayout();
-    createAndInitUniformBuffer();
+    CreateBindGroupLayout();
+    CreateAndInitUniformBuffer();
 }
 
-auto Renderer::createBindGroupLayout() -> void
+auto Renderer::CreateBindGroupLayout() -> void
 {
     wgpu::BindGroupLayoutEntry entry{
         .binding = 0,
@@ -31,7 +31,7 @@ auto Renderer::createBindGroupLayout() -> void
     m_bind_group_layout = m_device.CreateBindGroupLayout(&layoutDesc);
 }
 
-auto Renderer::createAndInitUniformBuffer() -> void
+auto Renderer::CreateAndInitUniformBuffer() -> void
 {
     m_uniform_buffer =
         util::createBuffer<Uniforms, wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform>(m_device, 1, true);
@@ -39,7 +39,7 @@ auto Renderer::createAndInitUniformBuffer() -> void
     m_uniform_buffer.Unmap();
 }
 
-auto Renderer::updateUniformBuffer(wgpu::CommandEncoder &encoder) -> void
+auto Renderer::UpdateUniformBuffer() -> void
 {
     // TODO
     //  instead need to just write to the uniform buffer
@@ -49,7 +49,8 @@ auto Renderer::updateUniformBuffer(wgpu::CommandEncoder &encoder) -> void
                                       .mappedAtCreation = true};
     if (m_uniforms_dirty)
     {
-        encoder.WriteBuffer(m_uniform_buffer, 0, reinterpret_cast<uint8_t *>(&m_uniforms), sizeof(Uniforms));
+        m_device.GetQueue().WriteBuffer(m_uniform_buffer, 0, reinterpret_cast<uint8_t *>(&m_uniforms),
+                                        sizeof(Uniforms));
         m_uniforms_dirty = false;
     }
 }
@@ -58,7 +59,7 @@ auto Renderer::Render(wgpu::SurfaceTexture &surfaceTexture) -> void
 {
     for (auto &layer : m_render_layers)
     {
-        layer.get().UpdateRes(m_device);
+        layer->UpdateRes(m_device);
     }
 
     wgpu::BindGroupEntry entry{.binding = 0, .buffer = m_uniform_buffer, .offset = 0, .size = sizeof(Uniforms)};
@@ -81,25 +82,18 @@ auto Renderer::Render(wgpu::SurfaceTexture &surfaceTexture) -> void
 
     for (auto &layer : m_render_layers)
     {
-        layer.get().Render(renderPass);
+        layer->Render(renderPass);
     }
 
     renderPass.End();
 
     // update uniforms at the end
-    updateUniformBuffer(encoder);
+    UpdateUniformBuffer();
 
     const auto encoderFinish = encoder.Finish();
     m_device.GetQueue().Submit(1, &encoderFinish);
 
     m_render_layers.clear();
-}
-
-auto Renderer::pushRenderLayer(render_layers::RenderLayer &renderLayer) -> void
-{
-    renderLayer.InitRes(m_device, m_format, m_bind_group_layout);
-    std::reference_wrapper renderLayerRef{renderLayer};
-    m_render_layers.emplace_back(renderLayerRef);
 }
 
 Renderer::~Renderer() = default;

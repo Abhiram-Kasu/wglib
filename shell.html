@@ -10,13 +10,72 @@
                 padding: 0;
                 box-sizing: border-box;
             }
-
             html,
             body {
                 width: 100%;
                 height: 100%;
                 overflow: hidden;
-                background-color: #000;
+                background: #000;
+            }
+
+            #topbar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 10;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 12px;
+                background: rgba(0, 0, 0, 0.75);
+                backdrop-filter: blur(4px);
+                font-family: monospace;
+                font-size: 13px;
+                color: white;
+                flex-wrap: wrap;
+            }
+
+            #topbar label {
+                color: #888;
+                font-size: 11px;
+                margin-right: 4px;
+            }
+
+            .mode-btn {
+                padding: 4px 12px;
+                border: 1px solid #555;
+                border-radius: 4px;
+                font-family: monospace;
+                font-size: 13px;
+                cursor: pointer;
+                transition:
+                    background 0.1s,
+                    border-color 0.1s;
+                background: #2a2a2a;
+                color: #ccc;
+            }
+            .mode-btn:hover {
+                background: #333;
+                border-color: #777;
+            }
+            .mode-btn.selected {
+                background: #0d0d0d;
+                border-color: #3a6ea5;
+                color: #4a8ec5;
+            }
+
+            #status {
+                position: absolute;
+                bottom: 10px;
+                left: 10px;
+                color: white;
+                font-family: monospace;
+                font-size: 13px;
+                background: rgba(0, 0, 0, 0.7);
+                padding: 8px 12px;
+                border-radius: 5px;
+                pointer-events: none;
             }
 
             #canvas {
@@ -26,22 +85,13 @@
                 image-rendering: pixelated;
                 image-rendering: crisp-edges;
             }
-
-            #status {
-                position: absolute;
-                top: 10px;
-                left: 10px;
-                color: white;
-                font-family: monospace;
-                font-size: 14px;
-                background: rgba(0, 0, 0, 0.7);
-                padding: 10px;
-                border-radius: 5px;
-                pointer-events: none;
-            }
         </style>
     </head>
     <body>
+        <div id="topbar">
+            <label>mode</label>
+            <!-- buttons injected by JS -->
+        </div>
         <canvas id="canvas"></canvas>
         <div id="status">Loading...</div>
 
@@ -49,28 +99,37 @@
             function resizeCanvas() {
                 const canvas = document.getElementById("canvas");
                 const dpr = window.devicePixelRatio || 1;
-
                 canvas.width = window.innerWidth * dpr;
                 canvas.height = window.innerHeight * dpr;
-
                 canvas.style.width = window.innerWidth + "px";
                 canvas.style.height = window.innerHeight + "px";
             }
-
             resizeCanvas();
-
             window.addEventListener("resize", resizeCanvas);
 
+            const STORAGE_KEY = "wgpu_autorun_args";
+
+            function saveAndReload(args) {
+                sessionStorage.setItem(STORAGE_KEY, JSON.stringify(args));
+                location.reload();
+            }
+
+            function consumeSavedArgs() {
+                const raw = sessionStorage.getItem(STORAGE_KEY);
+                if (!raw) return null;
+                sessionStorage.removeItem(STORAGE_KEY);
+                try {
+                    return JSON.parse(raw);
+                } catch {
+                    return null;
+                }
+            }
+
             var Module = {
-                canvas: (function () {
-                    return document.getElementById("canvas");
-                })(),
-                print: function (text) {
-                    console.log(text);
-                },
-                printErr: function (text) {
-                    console.error(text);
-                },
+                canvas: document.getElementById("canvas"),
+                noInitialRun: true,
+                print: (text) => console.log(text),
+                printErr: (text) => console.error(text),
                 setStatus: function (text) {
                     const status = document.getElementById("status");
                     if (text) {
@@ -81,8 +140,27 @@
                     }
                 },
                 onRuntimeInitialized: function () {
-                    console.log("Runtime initialized");
                     Module.setStatus("");
+
+                    const max = Module._get_argc();
+                    const topbar = document.getElementById("topbar");
+                    const saved = consumeSavedArgs();
+                    const current = saved ? parseInt(saved[0]) : null;
+
+                    // Build one button per number 0..max
+                    for (let i = 0; i <= max; i++) {
+                        const btn = document.createElement("button");
+                        btn.className =
+                            "mode-btn" + (i === current ? " selected" : "");
+                        btn.textContent = String(i);
+                        btn.addEventListener("click", () =>
+                            saveAndReload([String(i)]),
+                        );
+                        topbar.appendChild(btn);
+                    }
+
+                    // Auto-launch with the saved arg
+                    if (saved) Module.callMain(saved);
                 },
             };
         </script>

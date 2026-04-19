@@ -5,6 +5,11 @@
 
 #include "GLFW/glfw3.h"
 #include "lib/CoreEngine.hpp"
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
+
 #include "lib/CoreUtil.hpp"
 
 #include "lib/compute/ExampleLayers/ConwaysGameOfLife.hpp"
@@ -45,10 +50,11 @@ auto runComputeAndDrawingExample()
     constexpr auto width = 1440uz;
     wglib::Engine engine(glm::vec2{height, width}, "title");
 
-    wglib::render_layers::RectangleRenderLayer rect1(glm::vec2{10, 10}, glm::vec2{300, 300},
-                                                     glm::vec3{0.0f, 1.0f, 0.0f});
+    auto rect1 = engine.CreateRenderLayer<wglib::render_layers::RectangleRenderLayer>(
+        glm::vec2{10, 10}, glm::vec2{300, 300}, glm::vec3{0.0f, 1.0f, 0.0f});
 
-    wglib::render_layers::CircleRenderLayer circle(glm::vec2{250, 250}, 50.0f, glm::vec3{0.0f, 0.0f, 1.0f});
+    auto circle = engine.CreateRenderLayer<wglib::render_layers::CircleRenderLayer>(glm::vec2{250, 250}, 50.0f,
+                                                                                    glm::vec3{0.0f, 0.0f, 1.0f});
 
     auto compute = engine.InitComputeLayer<wglib::compute::ExampleLayer<50000>>(static_cast<float>(std::numbers::pi));
 
@@ -70,29 +76,29 @@ auto runComputeAndDrawingExample()
     engine.OnUpdate([&](const double s) {
         engine.Draw(rect1);
         static auto velocity = glm::vec2{50};
-        if (rect1.getPosition().x + rect1.getSize().x > width or rect1.getPosition().x < 0)
+        if (rect1->getPosition().x + rect1->getSize().x > width or rect1->getPosition().x < 0)
         {
             velocity.x *= -1;
         }
-        if (rect1.getPosition().y + rect1.getSize().y > height or rect1.getPosition().y < 0)
+        if (rect1->getPosition().y + rect1->getSize().y > height or rect1->getPosition().y < 0)
         {
             velocity.y *= -1;
         }
 
-        rect1.setPosition(rect1.getPosition() + velocity * static_cast<float>(s));
+        rect1->setPosition(rect1->getPosition() + velocity * static_cast<float>(s));
 
         engine.Draw(circle);
-        auto radius = circle.getRadius() - circle.getRadius() * s;
+        auto radius = circle->getRadius() - circle->getRadius() * s;
         if (radius <= 10)
             radius = 100;
-        circle.setRadius(radius);
+        circle->setRadius(radius);
 
         auto time = glfwGetTime();
         auto rotating_color = glm::vec3((sin(time * 1.0f) + 1.0f) * 0.5f, // Red channel
                                         (sin(time * 1.3f) + 1.0f) * 0.5f, // Green channel
                                         (sin(time * 1.7f) + 1.0f) * 0.5f  // Blue channel
         );
-        circle.setColor(rotating_color);
+        circle->setColor(rotating_color);
     });
 
     engine.Start();
@@ -103,7 +109,7 @@ auto runConwaysGameOfLife()
     wglib::Engine engine({2560, 1440}, "title");
 
     auto compute = engine.InitComputeLayer<wglib::compute::ConwaysGameOfLifeComputeLayer>(glm::vec2{2560, 1440});
-    wglib::render_layers::TextureRenderLayer textureRenderLayer{2560, 1440};
+    auto textureRenderLayer = engine.CreateRenderLayer<wglib::render_layers::TextureRenderLayer>(2560, 1440);
 
     engine.SetTargetFPS(120.0);
 
@@ -113,7 +119,7 @@ auto runConwaysGameOfLife()
         {
             ready = false;
             engine.PushComputeLayer(compute, [&](wgpu::Texture texture) {
-                textureRenderLayer.setTexture(texture);
+                textureRenderLayer->setTexture(texture);
                 ready = true;
             });
         }
@@ -130,7 +136,7 @@ auto runParticleSimulation()
     auto compute = engine.InitComputeLayer<wglib::compute::ParticleSimulationLayer>(
         10000, glm::vec2{2560, 1440}, 2, glm::vec4{0, 1, 1, 1}, glm::vec2{500, 500}, 100, 0.016, 500, 0.98, 2000, 50);
 
-    wglib::render_layers::TextureRenderLayer textureRenderLayer{2560, 1440};
+    auto textureRenderLayer = engine.CreateRenderLayer<wglib::render_layers::TextureRenderLayer>(2560, 1440);
 
     engine.SetTargetFPS(120.0);
 
@@ -143,7 +149,7 @@ auto runParticleSimulation()
                 wglib::util::log("Failed to get results");
                 return;
             }
-            textureRenderLayer.setTexture(std::move(*res));
+            textureRenderLayer->setTexture(std::move(*res));
             runIteration();
         });
     };
@@ -155,7 +161,7 @@ auto runParticleSimulation()
         {
             is_ready = false;
             engine.PushComputeLayer(compute, [&](std::optional<wgpu::Texture> res) {
-                textureRenderLayer.setTexture(*res);
+                textureRenderLayer->setTexture(*res);
                 is_ready = true;
             });
         }
@@ -204,3 +210,14 @@ int main(int argc, char **argv)
         runConwaysGameOfLife();
     }
 }
+
+#ifdef __EMSCRIPTEN__
+extern "C"
+{
+    EMSCRIPTEN_KEEPALIVE
+    int get_argc()
+    {
+        return 4;
+    }
+}
+#endif

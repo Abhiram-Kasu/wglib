@@ -15,8 +15,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repo (with shallow submodules)
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
 
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14
@@ -34,7 +37,7 @@ jobs:
           ninja
 
           # Ensure entry point is index.html for GitHub Pages
-          if [ -f *.html ]; then
+          if ls *.html 1> /dev/null 2>&1; then
             mv *.html index.html
           fi
 

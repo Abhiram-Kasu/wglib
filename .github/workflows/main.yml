@@ -1,0 +1,52 @@
+name: Build and Deploy Web (Emscripten)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Build with Emscripten
+        run: |
+          mkdir build_web
+          cd build_web
+          emcmake cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
+          ninja
+
+          # Ensure entry point is index.html for GitHub Pages
+          if [ -f *.html ]; then
+            mv *.html index.html
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build_web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

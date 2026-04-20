@@ -15,11 +15,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo (with shallow submodules)
+      - name: Checkout repo (no recursive submodules)
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
           fetch-depth: 1
+
+      - name: Initialize Dawn submodule only
+        run: |
+          git submodule update --init dawn
+
+      - name: Pull latest Dawn manually
+        run: |
+          cd dawn
+          git pull origin main
 
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14

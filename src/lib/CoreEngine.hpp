@@ -1,4 +1,5 @@
 #pragma once
+#include "GLFW/glfw3.h"
 #include "WindowManager.hpp"
 #include "compute/ComputeEngine.hpp"
 #include "lib/compute/ComputeLayer.hpp"
@@ -36,6 +37,11 @@ class Engine
     Engine(glm::vec2 size, std::string_view title);
 
     ~Engine();
+
+    auto GetWindow() -> GLFWwindow *
+    {
+        return m_window_manager->window();
+    }
 
     auto Start() -> void;
 

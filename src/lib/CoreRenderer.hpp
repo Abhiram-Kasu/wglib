@@ -23,16 +23,17 @@ class Renderer
   public:
     template <RenderableLayer Layer> struct Ref
     {
-        // Read-only shared_ptr-like interface for everyone
+        auto operator<=>(const Ref &) const = default;
+
         Layer *operator->()
         {
             return layer.get();
         }
-        const Layer &operator*() const
+        Layer &operator*()
         {
             return *layer;
         }
-        const Layer *get() const
+        Layer *get()
         {
             return layer.get();
         }

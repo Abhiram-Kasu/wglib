@@ -1,10 +1,15 @@
 #include <numbers>
 #include <ranges>
+#include <set>
 #include <span>
 #include <string>
+#include <unordered_set>
+#include <vector>
 
 #include "GLFW/glfw3.h"
 #include "lib/CoreEngine.hpp"
+#include "lib/CoreRenderer.hpp"
+#include "lib/render_layer/RenderLayer.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -183,6 +188,48 @@ auto refactorTest()
     engine.Start();
 }
 
+auto interactionTest() -> void
+{
+
+    wglib::Engine engine{{500, 500}, "Game"};
+    using Circle = wglib::Renderer::Ref<wglib::render_layers::CircleRenderLayer>;
+    std::set<Circle> set;
+    engine.OnUpdate([&](auto delta) {
+        if (glfwGetMouseButton(engine.GetWindow(), GLFW_MOUSE_BUTTON_LEFT))
+        {
+            auto xPos = 0.0;
+            auto yPos = 0.0;
+            glfwGetCursorPos(engine.GetWindow(), &xPos, &yPos);
+
+            set.insert(engine.CreateRenderLayer<wglib::render_layers::CircleRenderLayer>(glm::vec2{xPos, yPos}, 50.0f,
+                                                                                         glm::vec3{0.0f, 0.0f, 1.0f}));
+        }
+
+        std::vector<Circle> toRemove{};
+        toRemove.reserve(set.size());
+        for (auto layer : set)
+        {
+            layer->setOrigin(layer->getOrigin() + glm::vec2{0, 1});
+
+            if (layer->getOrigin().y + layer->getRadius() > 500)
+            {
+                toRemove.push_back(layer);
+            }
+            else
+            {
+                engine.Draw(layer);
+            }
+        }
+
+        for (auto circle : toRemove)
+        {
+            set.erase(circle);
+        }
+    });
+
+    engine.Start();
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2)
@@ -201,6 +248,9 @@ int main(int argc, char **argv)
         case 3:
             runSimpleTriangleExample();
             break;
+        case 4:
+            interactionTest();
+            break;
         default:
             runComputeAndDrawingExample();
         }
@@ -217,7 +267,7 @@ extern "C"
     EMSCRIPTEN_KEEPALIVE
     int get_argc()
     {
-        return 4;
+        return 5;
     }
 }
 #endif

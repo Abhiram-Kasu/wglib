@@ -22,7 +22,7 @@ WindowManager::WindowManager(uint32_t width, uint32_t height,
   }
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  m_window = glfwCreateWindow(width, height, "WebGPU window", nullptr, nullptr);
+  m_window = glfwCreateWindow(width, height, title.data(), nullptr, nullptr);
   m_surface = wgpu::glfw::CreateSurfaceForWindow(instance, m_window);
   if (!m_surface) {
     util::log("Failed to create surface");

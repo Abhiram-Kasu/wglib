@@ -46,6 +46,7 @@ if (EMSCRIPTEN)
             "-sASYNCIFY=1"
             "-sUSE_GLFW=3"
             "-sALLOW_MEMORY_GROWTH=1"
+            "-sTEXTDECODER=2"
             "--preload-file=${CMAKE_SOURCE_DIR}/src/shaders@/src/shaders"
             "--shell-file=${CMAKE_SOURCE_DIR}/shell.html"
     )

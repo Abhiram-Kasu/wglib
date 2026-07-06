@@ -16,9 +16,7 @@ class WindowManager {
 private:
   uint32_t m_width, m_height;
   std::string_view m_title;
-#ifndef __EMSCRIPTEN__
-  GLFWwindow *m_window;
-#endif
+  GLFWwindow *m_window = nullptr;
   wgpu::Surface m_surface;
   wgpu::TextureFormat m_format;
 

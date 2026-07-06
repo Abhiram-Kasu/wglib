@@ -1,4 +1,5 @@
 #pragma once
+#include "CoreInput.hpp"
 #include "GLFW/glfw3.h"
 #include "WindowManager.hpp"
 #include "compute/ComputeEngine.hpp"
@@ -18,6 +19,8 @@ namespace wglib
 {
 class Engine
 {
+
+    std::unique_ptr<InputManager> m_input_manager;
     std::unique_ptr<WindowManager> m_window_manager;
     std::unique_ptr<wglib::compute::ComputeEngine> m_computeEngine;
     wgpu::Instance m_instance;
@@ -74,5 +77,7 @@ class Engine
     {
         return m_renderer->CreateRenderLayer<T>(std::forward<Args>(args)...);
     }
+
+    auto Input() -> const InputManager &;
 };
 } // namespace wglib

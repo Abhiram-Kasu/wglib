@@ -1,4 +1,5 @@
 #include <numbers>
+#include <print>
 #include <ranges>
 #include <set>
 #include <span>
@@ -8,6 +9,7 @@
 
 #include "GLFW/glfw3.h"
 #include "lib/CoreEngine.hpp"
+#include "lib/CoreInput.hpp"
 #include "lib/CoreRenderer.hpp"
 #include "lib/render_layer/RenderLayer.hpp"
 
@@ -190,43 +192,31 @@ auto refactorTest()
 
 auto interactionTest() -> void
 {
-
     wglib::Engine engine{{500, 500}, "Game"};
     using Circle = wglib::Renderer::Ref<wglib::render_layers::CircleRenderLayer>;
     std::set<Circle> set;
     engine.OnUpdate([&](auto delta) {
-        if (glfwGetMouseButton(engine.GetWindow(), GLFW_MOUSE_BUTTON_LEFT))
+        if (engine.Input().get_cursor_down(wglib::InputManager::MouseButton::Left))
         {
-            auto xPos = 0.0;
-            auto yPos = 0.0;
-            glfwGetCursorPos(engine.GetWindow(), &xPos, &yPos);
-
+            auto pos = engine.Input().get_cursor_pos();
+            auto xPos = pos.x;
+            auto yPos = pos.y;
             set.insert(engine.CreateRenderLayer<wglib::render_layers::CircleRenderLayer>(glm::vec2{xPos, yPos}, 50.0f,
-                                                                                         glm::vec3{0.0f, 0.0f, 1.0f}));
+                                                                                         glm::vec3{0.5, 0, 0.25}));
         }
-
-        std::vector<Circle> toRemove{};
-        toRemove.reserve(set.size());
-        for (auto layer : set)
-        {
-            layer->setOrigin(layer->getOrigin() + glm::vec2{0, 1});
-
-            if (layer->getOrigin().y + layer->getRadius() > 500)
+        std::erase_if(set, [&engine](auto circle) {
+            if (circle->getOrigin().y + circle->getRadius() > 500)
             {
-                toRemove.push_back(layer);
+                return true;
             }
             else
             {
-                engine.Draw(layer);
+                circle->setOrigin(circle->getOrigin() + glm::vec2{0, 1});
+                engine.Draw(circle);
+                return false;
             }
-        }
-
-        for (auto circle : toRemove)
-        {
-            set.erase(circle);
-        }
+        });
     });
-
     engine.Start();
 }
 
@@ -249,6 +239,7 @@ int main(int argc, char **argv)
             runSimpleTriangleExample();
             break;
         case 4:
+            std::println("Staring interaction test");
             interactionTest();
             break;
         default:

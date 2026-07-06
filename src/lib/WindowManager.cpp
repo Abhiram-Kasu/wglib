@@ -2,9 +2,9 @@
 
 #include "CoreUtil.hpp"
 #include <iostream>
+#include "GLFW/glfw3.h"
 
 #ifndef __EMSCRIPTEN__
-#include "GLFW/glfw3.h"
 #include "webgpu/webgpu_glfw.h"
 #endif
 #ifndef __EMSCRIPTEN__
@@ -30,7 +30,17 @@ WindowManager::WindowManager(uint32_t width, uint32_t height,
   }
   configureSurface(device, adapter);
 #else
-  // For Emscripten, we get the surface from the canvas
+  if (!glfwInit()) {
+    throw std::runtime_error("Failed to initialize GLFW");
+  }
+
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  m_window = glfwCreateWindow(width, height, title.data(), nullptr, nullptr);
+  if (!m_window) {
+    throw std::runtime_error("Failed to create GLFW window");
+  }
+
+  // For Emscripten, we get the WGPU surface from the canvas
   wgpu::EmscriptenSurfaceSourceCanvasHTMLSelector canvasDesc{};
   canvasDesc.selector = "#canvas";
 
@@ -76,11 +86,7 @@ auto WindowManager::surface() const -> const wgpu::Surface & {
 }
 
 auto WindowManager::window() const -> GLFWwindow * {
-#ifndef __EMSCRIPTEN__
   return m_window;
-#else
-  return nullptr;
-#endif
 }
 
 auto WindowManager::format() const -> wgpu::TextureFormat { return m_format; }

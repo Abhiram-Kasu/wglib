@@ -13,8 +13,9 @@ namespace wglib
 {
 Renderer::Renderer(const wgpu::Instance &instance, wgpu::Adapter &adapter, wgpu::Device &device,
                    wgpu::TextureFormat format, glm::vec2 screenSize)
-    : m_instance(instance), m_adapter(adapter), m_device(device), m_format(format), m_uniforms(screenSize)
+    : m_instance(instance), m_adapter(adapter), m_device(device), m_format(format), m_screen_size(screenSize)
 {
+    BindUniforms();
     CreateBindGroupLayout();
     CreateAndInitUniformBuffer();
 }
@@ -44,12 +45,12 @@ auto Renderer::UpdateUniformBuffer() -> void
     // TODO
     //  instead need to just write to the uniform buffer
 
-    wgpu::BufferDescriptor bufferDesc{.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
-                                      .size = sizeof(Uniforms),
-                                      .mappedAtCreation = true};
+    const wgpu::BufferDescriptor bufferDesc{.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+                                            .size = sizeof(Uniforms),
+                                            .mappedAtCreation = true};
     if (m_uniforms_dirty)
     {
-        m_device.GetQueue().WriteBuffer(m_uniform_buffer, 0, reinterpret_cast<uint8_t *>(&m_uniforms),
+        m_device.GetQueue().WriteBuffer(m_uniform_buffer, 0, reinterpret_cast<std::byte *>(&m_uniforms),
                                         sizeof(Uniforms));
         m_uniforms_dirty = false;
     }
@@ -94,6 +95,11 @@ auto Renderer::Render(wgpu::SurfaceTexture &surfaceTexture) -> void
     m_device.GetQueue().Submit(1, &encoderFinish);
 
     m_render_layers.clear();
+}
+
+auto Renderer::BindUniforms() -> void
+{
+    m_uniforms = {.screen_size = m_screen_size};
 }
 
 Renderer::~Renderer() = default;

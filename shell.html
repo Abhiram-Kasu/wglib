@@ -96,13 +96,44 @@
         <div id="status">Loading...</div>
 
         <script type="text/javascript">
+            if (typeof TextDecoder !== "undefined") {
+                const originalDecode = TextDecoder.prototype.decode;
+                TextDecoder.prototype.decode = function (input, options) {
+                    if (input && ArrayBuffer.isView(input)) {
+                        const buffer = input.buffer;
+                        if (
+                            buffer &&
+                            typeof buffer.resizable === "boolean" &&
+                            buffer.resizable
+                        ) {
+                            input = input.slice
+                                ? input.slice()
+                                : new Uint8Array(
+                                      input.buffer,
+                                      input.byteOffset,
+                                      input.byteLength,
+                                  );
+                        }
+                    }
+                    return originalDecode.call(this, input, options);
+                };
+            }
+
             function resizeCanvas() {
-                const canvas = document.getElementById("canvas");
-                const dpr = window.devicePixelRatio || 1;
-                canvas.width = window.innerWidth * dpr;
-                canvas.height = window.innerHeight * dpr;
-                canvas.style.width = window.innerWidth + "px";
-                canvas.style.height = window.innerHeight + "px";
+              const canvas = document.getElementById("canvas");
+              const dpr = window.devicePixelRatio || 1;
+
+              const width = window.innerWidth;
+              const height = window.innerHeight;
+              canvas.width = width * dpr;
+              canvas.height = height * dpr;
+              canvas.style.width = width + "px";
+              canvas.style.height = height + "px";
+
+              if (typeof Module !== "undefined" && Module._glfwSetWindowSize) {
+                  const primaryWindowPtr = 1;
+                  Module._glfwSetWindowSize(primaryWindowPtr, width, height);
+              }
             }
             resizeCanvas();
             window.addEventListener("resize", resizeCanvas);

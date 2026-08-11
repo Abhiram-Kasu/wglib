@@ -147,36 +147,27 @@ auto runParticleSimulation()
 
     engine.SetTargetFPS(120.0);
 
-    std::function<void()> runIteration;
-
-    runIteration = [&]() {
-        engine.PushComputeLayer(compute, [&](std::optional<wgpu::Texture> res) {
-            if (not res)
-            {
-                wglib::util::log("Failed to get results");
-                return;
-            }
-            textureRenderLayer->setTexture(std::move(*res));
-            runIteration();
-        });
-    };
-
-    auto is_ready = true;
+    auto is_compute_in_flight = false;
 
     engine.OnUpdate([&](auto) {
-        if (is_ready)
+        if (not is_compute_in_flight)
         {
-            is_ready = false;
+            is_compute_in_flight = true;
             engine.PushComputeLayer(compute, [&](std::optional<wgpu::Texture> res) {
-                textureRenderLayer->setTexture(*res);
-                is_ready = true;
+                if (not res)
+                {
+                    wglib::util::log("Failed to get results");
+                }
+                else
+                {
+                    textureRenderLayer->setTexture(std::move(*res));
+                }
+                is_compute_in_flight = false;
             });
         }
 
         engine.Draw(textureRenderLayer);
     });
-
-    runIteration();
 
     engine.Start();
 }

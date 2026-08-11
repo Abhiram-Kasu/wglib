@@ -26,7 +26,7 @@ class Engine
     wgpu::Instance m_instance;
     wgpu::Device m_device;
     wgpu::Adapter m_adapter;
-    glm::vec2 m_window_size;
+    glm::vec<2, uint32_t> m_window_size;
     std::unique_ptr<Renderer> m_renderer;
     std::function<void(double)> m_update_function;
     double m_last_frame_time{0.0f};
@@ -37,7 +37,7 @@ class Engine
     auto update_frame(double delta) -> void;
 
   public:
-    Engine(glm::vec2 size, std::string_view title);
+    Engine(glm::vec<2, uint32_t> logical_size, std::string_view title);
 
     ~Engine();
 

@@ -65,9 +65,12 @@ class Renderer
     std::vector<std::shared_ptr<const render_layers::RenderLayer>> m_render_layers{};
 
     Uniforms m_uniforms;
+    glm::vec<2, uint32_t> m_screen_size;
     bool m_uniforms_dirty;
     wgpu::Buffer m_uniform_buffer;
     wgpu::BindGroupLayout m_bind_group_layout;
+
+    auto BindUniforms() -> void;
 
     auto UpdateUniformBuffer() -> void;
 

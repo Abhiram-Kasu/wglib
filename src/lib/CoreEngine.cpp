@@ -16,7 +16,7 @@
 
 namespace wglib
 {
-Engine::Engine(glm::vec2 size, std::string_view title) : m_window_size(size)
+Engine::Engine(glm::vec<2, uint32_t> size, std::string_view title) : m_window_size(size)
 {
 
     constexpr auto K_TIMED_WAIT_ANY = wgpu::InstanceFeatureName::TimedWaitAny;

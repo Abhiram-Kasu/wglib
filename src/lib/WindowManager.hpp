@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <glm/common.hpp>
 #include <string_view>
 #include <webgpu/webgpu_cpp.h>
 
@@ -8,38 +9,37 @@
 #include "GLFW/glfw3.h"
 #else
 // Forward declaration for GLFWwindow when using Emscripten
-struct GLFWwindow;
 #endif
+struct GLFWwindow;
 
-namespace wglib {
-class WindowManager {
-private:
-  uint32_t m_width, m_height;
-  std::string_view m_title;
-  GLFWwindow *m_window = nullptr;
-  wgpu::Surface m_surface;
-  wgpu::TextureFormat m_format;
+namespace wglib
+{
+class WindowManager
+{
+  private:
+    glm::vec<2, uint32_t> m_window_size;
+    std::string_view m_title;
+    GLFWwindow *m_window = nullptr;
+    wgpu::Surface m_surface;
+    wgpu::TextureFormat m_format;
 
-  auto configureSurface(wgpu::Device &device, wgpu::Adapter &adapter) -> void;
+    auto configureSurface(wgpu::Device &device, wgpu::Adapter &adapter) -> void;
 
-  static auto onClick(int, int, int) -> void;
-  auto onMouseMove() -> void;
+    static auto onClick(int, int, int) -> void;
+    auto onMouseMove() -> void;
 
-public:
-  WindowManager(uint32_t width, uint32_t height, std::string_view title,
-                wgpu::Instance &instance, wgpu::Device &device,
-                wgpu::Adapter &adapter);
+    static auto onWindowSizeChanged(GLFWwindow *window, int width, int height) -> void;
 
-  auto width() const -> uint32_t;
+  public:
+    WindowManager(uint32_t width, uint32_t height, std::string_view title, wgpu::Instance &instance,
+                  wgpu::Device &device, wgpu::Adapter &adapter);
 
-  auto height() const -> uint32_t;
+    auto title() const -> std::string_view;
 
-  auto title() const -> std::string_view;
+    auto surface() const -> const wgpu::Surface &;
 
-  auto surface() const -> const wgpu::Surface &;
+    auto window() const -> GLFWwindow *;
 
-  auto window() const -> GLFWwindow *;
-
-  auto format() const -> wgpu::TextureFormat;
+    auto format() const -> wgpu::TextureFormat;
 };
 } // namespace wglib

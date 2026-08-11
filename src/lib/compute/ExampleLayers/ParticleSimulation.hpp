@@ -26,6 +26,11 @@ class ParticleSimulationLayer
     float decayLength;
   };
 
+  struct alignas(16) TouchActionUniforms {
+    glm::vec2 touchPosition;
+    float touchPower;
+  };
+
 private:
   uint32_t m_numBalls, m_circleRadius;
   glm::vec2 m_size;

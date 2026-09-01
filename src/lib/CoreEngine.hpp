@@ -79,5 +79,7 @@ class Engine
     }
 
     auto Input() -> const InputManager &;
+
+    auto GetWindowSize() -> glm::u32vec2;
 };
 } // namespace wglib

@@ -28,10 +28,12 @@
 #include "lib/render_layer/TriangleRenderLayer.hpp"
 #include "webgpu/webgpu_cpp.h"
 
+static auto engine_window_size = glm::u32vec2{};
+
 auto runSimpleTriangleExample()
 {
     auto engine = wglib::Engine(glm::vec2{1000, 1000}, "triangle");
-
+    engine_window_size = engine.GetWindowSize();
     auto triangle = engine.CreateRenderLayer<wglib::render_layers::TriangleRenderLayer>(
         std::array<wglib::render_layers::Vertex, 3>{wglib::render_layers::Vertex{
                                                         .position = {1000.0f / 3, 1000 / 3 * 2},
@@ -56,6 +58,7 @@ auto runComputeAndDrawingExample()
     constexpr auto height = 1440uz;
     constexpr auto width = 1440uz;
     wglib::Engine engine(glm::vec2{height, width}, "title");
+    engine_window_size = engine.GetWindowSize();
 
     auto rect1 = engine.CreateRenderLayer<wglib::render_layers::RectangleRenderLayer>(
         glm::vec2{10, 10}, glm::vec2{300, 300}, glm::vec3{0.0f, 1.0f, 0.0f});
@@ -114,6 +117,7 @@ auto runComputeAndDrawingExample()
 auto runConwaysGameOfLife()
 {
     wglib::Engine engine({2560, 1440}, "title");
+    engine_window_size = engine.GetWindowSize();
 
     auto compute = engine.InitComputeLayer<wglib::compute::ConwaysGameOfLifeComputeLayer>(glm::vec2{2560, 1440});
     auto textureRenderLayer = engine.CreateRenderLayer<wglib::render_layers::TextureRenderLayer>(2560, 1440);
@@ -139,6 +143,7 @@ auto runConwaysGameOfLife()
 auto runParticleSimulation()
 {
     wglib::Engine engine({2560, 1440}, "title");
+    engine_window_size = engine.GetWindowSize();
 
     auto compute = engine.InitComputeLayer<wglib::compute::ParticleSimulationLayer>(
         10000, glm::vec2{2560, 1440}, 2, glm::vec4{0, 1, 1, 1}, glm::vec2{500, 500}, 100, 0.016, 500, 0.98, 2000, 50);
@@ -175,6 +180,7 @@ auto runParticleSimulation()
 auto refactorTest()
 {
     wglib::Engine engine{{500, 500}, "Game"};
+    engine_window_size = engine.GetWindowSize();
     auto circleRenderLayer = engine.CreateRenderLayer<wglib::render_layers::CircleRenderLayer>(
         glm::vec2{250, 250}, 50.0f, glm::vec3{0.0f, 0.0f, 1.0f});
     engine.OnUpdate([&](auto dt) { engine.Draw(circleRenderLayer); });
@@ -184,6 +190,7 @@ auto refactorTest()
 auto interactionTest() -> void
 {
     wglib::Engine engine{{500, 500}, "Game"};
+    engine_window_size = engine.GetWindowSize();
     using Circle = wglib::Renderer::Ref<wglib::render_layers::CircleRenderLayer>;
     std::set<Circle> set;
     engine.OnUpdate([&](auto delta) {
@@ -250,6 +257,16 @@ extern "C"
     int get_argc()
     {
         return 5;
+    }
+    EMSCRIPTEN_KEEPALIVE
+    int get_window_height()
+    {
+        return engine_window_size.y;
+    }
+    EMSCRIPTEN_KEEPALIVE
+    int get_window_width()
+    {
+        return engine_window_size.x;
     }
 }
 #endif

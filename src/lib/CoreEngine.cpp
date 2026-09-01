@@ -141,6 +141,11 @@ auto Engine::Input() -> const InputManager &
     return *m_input_manager;
 }
 
+auto Engine::GetWindowSize() -> glm::u32vec2
+{
+    return m_window_size;
+}
+
 Engine::~Engine() = default;
 
 } // namespace wglib

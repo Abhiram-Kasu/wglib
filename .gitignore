@@ -3,3 +3,4 @@ build_web/
 cmake-build-debug/
 .idea/
 .cache/
+compile_commands.json

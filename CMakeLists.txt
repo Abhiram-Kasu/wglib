@@ -36,11 +36,13 @@ endif ()
 add_subdirectory("dawn" EXCLUDE_FROM_ALL)
 
 if (EMSCRIPTEN)
+
   set_target_properties(wglib PROPERTIES SUFFIX ".html")
   target_link_libraries(wglib PRIVATE emdawnwebgpu_cpp)
   # Embed shader files into the virtual file system
   # The --preload-file flag makes files available at runtime
   target_link_options(wglib PRIVATE
+      "-sEXPORTED_FUNCTIONS=_main,_get_argc,_glfwSetWindowSize,_get_window_height,_get_window_width"
             "-sEXPORTED_RUNTIME_METHODS=callMain"
             "-sNO_EXIT_RUNTIME=1"
             "-sASYNCIFY=1"

@@ -35,8 +35,8 @@ auto RectangleRenderLayer::InitRes(const wgpu::Device &device,
   };
   m_vertex_buffer = device.CreateBuffer(&bufferDesc);
 
-  if (m_vertex_buffer.WriteMappedRange(0, m_vertices, sizeof(Vertex) * 6)
-          .status != wgpu::Status::Success) {
+  if (not m_vertex_buffer.WriteMappedRange(0, m_vertices, sizeof(Vertex) * 6)) {
+
     util::log("Failed to write to vertex buffer");
     exit(0);
   }

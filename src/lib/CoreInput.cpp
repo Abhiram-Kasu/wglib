@@ -1,6 +1,6 @@
 #include "CoreInput.hpp"
-#include "WindowManager.hpp"
 #include "GLFW/glfw3.h"
+#include "WindowManager.hpp"
 #include "glm/detail/qualifier.hpp"
 #include "glm/ext/vector_float2.hpp"
 #ifdef __EMSCRIPTEN__
@@ -45,6 +45,11 @@ auto InputManager::get_cursor_pos() const noexcept -> glm::vec2
 auto InputManager::get_cursor_down(MouseButton mouse_button) const noexcept -> bool
 {
     return glfwGetMouseButton(m_window_handle, static_cast<int>(mouse_button)) == GLFW_PRESS;
+}
+
+auto InputManager::get_cursor_up(MouseButton mouse_button) const noexcept -> bool
+{
+    return glfwGetMouseButton(m_window_handle, static_cast<int>(mouse_button)) == GLFW_RELEASE;
 }
 
 } // namespace wglib

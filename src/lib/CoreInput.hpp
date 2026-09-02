@@ -23,6 +23,7 @@ class InputManager
     };
 
     auto get_cursor_down(MouseButton mouse_button) const noexcept -> bool;
+    auto get_cursor_up(MouseButton mouse_button) const noexcept -> bool;
 };
 
 } // namespace wglib

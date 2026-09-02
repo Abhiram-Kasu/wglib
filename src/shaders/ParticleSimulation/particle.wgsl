@@ -14,12 +14,21 @@ struct Uniforms {
   decayLength: f32
 };
 
+struct TouchUniforms {
+    pos: vec2<f32>,
+    radius: f32,
+    touch_power: f32
+};
+
 
 
 @group(0) @binding(0) var<storage, read> input_buffer: array<Particle>;
 @group(0) @binding(1) var<storage, read_write> output_buffer: array<Particle>;
 @group(0) @binding(2) var<uniform> uniforms: Uniforms;
 @group(0) @binding(3) var output_texture: texture_storage_2d<rgba8unorm, write>;
+
+@group(0) @binding(4) var<uniform> touch_uniforms: TouchUniforms;
+
 
 
 @compute @workgroup_size(64)
@@ -39,6 +48,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Gravity
     accumulatedForce.y += uniforms.gravity;
+
+    //Touch Force
+    if (touch_uniforms.touch_power > 0.0) {
+        let vec = current.position - touch_uniforms.pos;
+        if (dot(vec, vec) <= touch_uniforms.radius*touch_uniforms.radius) {
+            accumulatedForce += normalize(vec) * touch_uniforms.touch_power;
+        }
+    }
 
     // Particle repulsion
     for(var i: u32 = 0; i < arrayLength(&input_buffer); i++) {

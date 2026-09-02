@@ -29,6 +29,7 @@ class ParticleSimulationLayer
 
   struct alignas(16) TouchActionUniforms {
     glm::vec2 touchPosition;
+    float radius;
     float touchPower;
   };
 
@@ -44,10 +45,12 @@ private:
   bool m_initialized{false};
   bool m_using_buffer_1{true};
 
-  wgpu::Buffer m_circleUniformBuffer, m_circleBuffer1, m_circleBuffer2;
+  wgpu::Buffer m_circleUniformBuffer, m_circleBuffer1, m_circleBuffer2, m_touchActionUniformsBuffer;
   wgpu::Texture m_drawTexture;
 
   CircleUniforms m_uniforms;
+  TouchActionUniforms m_touchUniforms;
+  bool m_touchUniformsDirty{false};
 
   static auto genParticlesInSquareFormation(uint32_t numBalls, glm::vec2 size,
                                             glm::vec2 start, uint32_t numPerRow,
@@ -56,6 +59,7 @@ private:
   auto createAndSetBindGroups(const wgpu::Device& device) -> void;
   auto spawnMoreParticlesAt(glm::vec2 location, size_t num) -> std::vector<Particle>;
   auto runLogic(const InputManager& manager, wgpu::CommandEncoder& encoder, const wgpu::Device& device) -> void;
+  auto updateUniforms(wgpu::Queue& encoder) -> void; 
 
 public:
   ParticleSimulationLayer(uint32_t numBalls, glm::vec2 size,

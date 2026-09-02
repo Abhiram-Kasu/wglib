@@ -40,7 +40,7 @@ private:
 
   friend class wglib::Engine;
   // Called every tick by the engine
-  auto Compute() -> void;
+  auto Compute(Engine& engine) -> void;
 
 public:
   ComputeEngine(wgpu::Device &m_device);

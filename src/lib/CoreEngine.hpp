@@ -80,6 +80,8 @@ class Engine
 
     auto Input() -> const InputManager &;
 
+    auto GetDevice() -> const wgpu::Device&;
+
     auto GetWindowSize() -> glm::u32vec2;
 };
 } // namespace wglib

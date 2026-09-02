@@ -1,11 +1,15 @@
 #include "ParticleSimulation.hpp"
 #include "glm/ext/vector_float2.hpp"
+#include "lib/CoreInput.hpp"
 #include "lib/CoreUtil.hpp"
 #include "webgpu/webgpu_cpp.h"
+#include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <random>
 #include <utility>
 #include <vector>
+#include "lib/CoreEngine.hpp"
 
 namespace wglib::compute {
 
@@ -69,7 +73,8 @@ auto ParticleSimulationLayer::InitImpl(wgpu::Device &device) -> void {
                                    sizeof(Particle) * m_initalParticles.size());
   m_circleBuffer1.Unmap();
 
-  m_circleBuffer2 = util::createBuffer<Particle, wgpu::BufferUsage::Storage>(
+  m_circleBuffer2 = util::createBuffer<Particle, wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc |
+      wgpu::BufferUsage::CopyDst>(
       device, m_numBalls, true);
   m_circleBuffer2.WriteMappedRange(0, m_initalParticles.data(),
                                    sizeof(Particle) * m_initalParticles.size());
@@ -91,6 +96,12 @@ auto ParticleSimulationLayer::InitImpl(wgpu::Device &device) -> void {
           .module = util::createShaderModuleFromFile(
               "../src/shaders/ParticleSimulation/particle.wgsl", device)}};
   m_computePipeline = device.CreateComputePipeline(&desc);
+  createAndSetBindGroups(device);
+
+  readyFlag.store(true, std::memory_order_release);
+}
+
+auto ParticleSimulationLayer::createAndSetBindGroups(const wgpu::Device& device) -> void { 
   wgpu::BindGroupEntry entriesSet1[4]{
       {.binding = 0,
        .buffer = m_circleBuffer1,
@@ -126,7 +137,7 @@ auto ParticleSimulationLayer::InitImpl(wgpu::Device &device) -> void {
 
   m_bg1 = device.CreateBindGroup(&bgDesc1);
   m_bg2 = device.CreateBindGroup(&bgDesc2);
-
+  
   readyFlag.store(true, std::memory_order_release);
 }
 auto ParticleSimulationLayer::getResultImpl() -> std::optional<wgpu::Texture> {
@@ -137,7 +148,7 @@ auto ParticleSimulationLayer::getResultImpl() -> std::optional<wgpu::Texture> {
   }
 }
 auto ParticleSimulationLayer::ComputeImpl(wgpu::CommandEncoder &encoder,
-                                          wgpu::Queue &queue) -> void {
+                                          wgpu::Queue &queue, Engine& engine) -> void {
 
   // Clear the texture using a render pass
   wgpu::RenderPassColorAttachment colorAttachment{
@@ -156,15 +167,100 @@ auto ParticleSimulationLayer::ComputeImpl(wgpu::CommandEncoder &encoder,
   renderPass.End();
 
   // Run compute pass to simulate physics and draw particles
+  runLogic(engine.Input(), encoder, engine.GetDevice());
   const auto computePass = encoder.BeginComputePass();
+    
   computePass.SetBindGroup(0, m_bg1);
   computePass.SetPipeline(m_computePipeline);
   computePass.DispatchWorkgroups(util::divCeil<uint32_t>(m_numBalls, 64));
   computePass.End();
 
+
+  
   const auto commandBuffer = encoder.Finish();
   queue.Submit(1, &commandBuffer);
 
   std::swap(m_bg1, m_bg2);
+  m_using_buffer_1 = not m_using_buffer_1;
+}
+
+auto ParticleSimulationLayer::spawnMoreParticlesAt(glm::vec2 location,
+                                                  size_t num)
+    -> std::vector<Particle> {
+  std::vector<Particle> particles;
+  particles.reserve(num);
+  if (num == 0) {
+    return particles;
+  }
+
+  const auto cols = std::max<uint32_t>(1u, static_cast<uint32_t>(
+                                              std::ceil(std::sqrt(static_cast<float>(num)))));
+  const auto rows = util::divCeil<uint32_t>(static_cast<uint32_t>(num), cols);
+  const auto spacing = static_cast<float>(m_circleRadius * 2u);
+
+  for (uint32_t row = 0; row < rows; ++row) {
+    for (uint32_t col = 0; col < cols; ++col) {
+      if (particles.size() >= num) {
+        return particles;
+      }
+
+      particles.emplace_back(glm::vec2{0.0f},
+                             location + glm::vec2{col * spacing, row * spacing},
+                             static_cast<float>(m_circleRadius));
+    }
+  }
+
+  return particles;
+}
+
+auto ParticleSimulationLayer::runLogic(const InputManager &manager,
+                                       wgpu::CommandEncoder &encoder,
+                                       const wgpu::Device &device) -> void {
+  if (not manager.get_cursor_down(InputManager::MouseButton::Left)) {
+    return;
+  }
+
+  constexpr auto kNumBallsToSpawn = 50uz;
+  const auto mouseCoords = manager.get_cursor_pos();
+  auto spawnedParticles = spawnMoreParticlesAt(mouseCoords, kNumBallsToSpawn);
+  if (spawnedParticles.empty()) {
+    return;
+  }
+
+  const auto oldBallCount = m_numBalls;
+  const auto newBallCount = oldBallCount + static_cast<uint32_t>(spawnedParticles.size());
+
+  auto newBuffer1 = util::createBuffer<Particle,
+                                      wgpu::BufferUsage::Storage |
+                                          wgpu::BufferUsage::CopySrc |
+                                          wgpu::BufferUsage::CopyDst>(
+      device, newBallCount, true);
+  auto newBuffer2 = util::createBuffer<Particle,
+                                      wgpu::BufferUsage::Storage |
+                                          wgpu::BufferUsage::CopySrc |
+                                          wgpu::BufferUsage::CopyDst>(
+      device, newBallCount, false);
+
+  const auto currentInputBuffer = m_using_buffer_1 ? m_circleBuffer1 : m_circleBuffer2;
+  encoder.CopyBufferToBuffer(currentInputBuffer, 0, newBuffer1,
+                            0, oldBallCount * sizeof(Particle));
+
+  newBuffer1.WriteMappedRange(oldBallCount * sizeof(Particle),
+                              spawnedParticles.data(),
+                              spawnedParticles.size() * sizeof(Particle));
+  newBuffer1.Unmap();
+
+  encoder.CopyBufferToBuffer(newBuffer1, 0, newBuffer2, 0, newBallCount * sizeof(Particle));
+
+  m_numBalls = newBallCount;
+
+  m_circleBuffer1 = newBuffer1;
+    m_circleBuffer2 = newBuffer2;
+
+  m_circleBuffer1 = newBuffer2;
+  m_circleBuffer2 = newBuffer1;
+  
+
+  createAndSetBindGroups(device);
 }
 } // namespace wglib::compute

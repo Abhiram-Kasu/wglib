@@ -2,6 +2,7 @@
 #include "glm/vec2.hpp"
 
 #include "glm/vec4.hpp"
+#include "lib/CoreInput.hpp"
 #include "lib/compute/ComputeLayer.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include <atomic>
@@ -41,6 +42,7 @@ private:
   wgpu::BindGroup m_bg1, m_bg2;
   std::atomic<bool> readyFlag{false};
   bool m_initialized{false};
+  bool m_using_buffer_1{true};
 
   wgpu::Buffer m_circleUniformBuffer, m_circleBuffer1, m_circleBuffer2;
   wgpu::Texture m_drawTexture;
@@ -51,6 +53,9 @@ private:
                                             glm::vec2 start, uint32_t numPerRow,
                                             float ballRadius)
       -> std::vector<Particle>;
+  auto createAndSetBindGroups(const wgpu::Device& device) -> void;
+  auto spawnMoreParticlesAt(glm::vec2 location, size_t num) -> std::vector<Particle>;
+  auto runLogic(const InputManager& manager, wgpu::CommandEncoder& encoder, const wgpu::Device& device) -> void;
 
 public:
   ParticleSimulationLayer(uint32_t numBalls, glm::vec2 size,
@@ -62,6 +67,6 @@ public:
 protected:
   virtual auto getResultImpl() -> std::optional<wgpu::Texture>;
   virtual auto InitImpl(wgpu::Device &) -> void;
-  virtual auto ComputeImpl(wgpu::CommandEncoder &e, wgpu::Queue &) -> void;
+  virtual auto ComputeImpl(wgpu::CommandEncoder &e, wgpu::Queue &, Engine& engine) -> void;
 };
 } // namespace wglib::compute

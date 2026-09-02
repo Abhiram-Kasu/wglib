@@ -1,12 +1,11 @@
 #include "ComputeEngine.hpp"
 #include "lib/CoreUtil.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include <optional>
 
 namespace wglib::compute {
 ComputeEngine::ComputeEngine(wgpu::Device &device) : m_device(device) {}
 
-auto ComputeEngine::Compute() -> void {
+auto ComputeEngine::Compute(Engine& engine) -> void {
   auto queue = m_device.GetQueue();
 
   while (not m_computeQueue.empty()) {
@@ -15,7 +14,7 @@ auto ComputeEngine::Compute() -> void {
     m_computeQueue.pop();
 
     auto commandEncoder = m_device.CreateCommandEncoder();
-    task.layer->Compute(commandEncoder, queue);
+    task.layer->Compute(commandEncoder, queue, engine);
 
     queue.OnSubmittedWorkDone(
         wgpu::CallbackMode::AllowProcessEvents,

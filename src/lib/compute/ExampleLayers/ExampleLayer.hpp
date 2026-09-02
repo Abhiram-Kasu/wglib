@@ -55,7 +55,7 @@ protected:
     }
   }
   auto InitImpl(wgpu::Device &) -> void override;
-  auto ComputeImpl(wgpu::CommandEncoder &e, wgpu::Queue &) -> void override;
+  auto ComputeImpl(wgpu::CommandEncoder &e, wgpu::Queue &, Engine& engine) -> void override;
 };
 
 template <size_t numItems> auto ExampleLayer<numItems>::initItems() -> void {
@@ -111,7 +111,7 @@ auto ExampleLayer<numItems>::InitImpl(wgpu::Device &device) -> void {
 
 template <size_t numItems>
 auto ExampleLayer<numItems>::ComputeImpl(wgpu::CommandEncoder &e,
-                                         wgpu::Queue &queue) -> void {
+                                         wgpu::Queue &queue, Engine& engine) -> void {
   // Upload input data to buffer
   queue.WriteBuffer(m_initalBuffer, 0, m_items.data(),
                     m_items.size() * sizeof(float));

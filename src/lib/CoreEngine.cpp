@@ -121,7 +121,7 @@ auto Engine::update_frame(double delta) -> void
     {
         m_update_function(delta);
     }
-    m_computeEngine->Compute();
+    m_computeEngine->Compute(*this);
     render();
 }
 
@@ -144,6 +144,11 @@ auto Engine::Input() -> const InputManager &
 auto Engine::GetWindowSize() -> glm::u32vec2
 {
     return m_window_size;
+}
+
+auto Engine::GetDevice() -> const wgpu::Device &
+{
+    return m_device;
 }
 
 Engine::~Engine() = default;

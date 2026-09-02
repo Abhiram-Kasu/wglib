@@ -102,7 +102,7 @@ auto ConwaysGameOfLifeComputeLayer::InitImpl(wgpu::Device &device) -> void {
 } // namespace wglib::compute::example_layers
 
 auto ConwaysGameOfLifeComputeLayer::ComputeImpl(wgpu::CommandEncoder &encoder,
-                                                wgpu::Queue &queue) -> void {
+                                                wgpu::Queue &queue, Engine& engine) -> void {
 
   auto computePass = encoder.BeginComputePass();
   computePass.SetPipeline(m_computePipeline);

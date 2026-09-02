@@ -31,7 +31,7 @@ public:
 protected:
   auto getResultImpl() -> const wgpu::Texture & override;
   auto InitImpl(wgpu::Device &device) -> void override;
-  auto ComputeImpl(wgpu::CommandEncoder &e, wgpu::Queue &q) -> void override;
+  auto ComputeImpl(wgpu::CommandEncoder &e, wgpu::Queue &q, Engine& engine) -> void override;
 };
 
 } // namespace wglib::compute

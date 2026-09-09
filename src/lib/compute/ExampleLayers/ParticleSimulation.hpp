@@ -1,6 +1,6 @@
 
 #include "glm/vec2.hpp"
-
+#include <span>
 #include "glm/vec4.hpp"
 #include "lib/CoreInput.hpp"
 #include "lib/compute/ComputeLayer.hpp"
@@ -25,15 +25,18 @@ class ParticleSimulationLayer
     float damping;
     float forceAmp;
     float decayLength;
+    uint32_t ballCount;
   };
 
   struct alignas(16) TouchActionUniforms {
     glm::vec2 touchPosition;
     float radius;
     float touchPower;
+    bool operator ==(const TouchActionUniforms&) const = default;
   };
 
 private:
+  static constexpr auto kBufferMultiplier = 1.5f;
   uint32_t m_numBalls, m_circleRadius;
   glm::vec2 m_size;
   glm::vec4 m_ballColor;
@@ -51,6 +54,8 @@ private:
   CircleUniforms m_uniforms;
   TouchActionUniforms m_touchUniforms;
   bool m_touchUniformsDirty{false};
+  bool m_uniformsDirty{false};
+  size_t m_bufferSize;
 
   static auto genParticlesInSquareFormation(uint32_t numBalls, glm::vec2 size,
                                             glm::vec2 start, uint32_t numPerRow,
@@ -60,6 +65,9 @@ private:
   auto spawnMoreParticlesAt(glm::vec2 location, size_t num) -> std::vector<Particle>;
   auto runLogic(const InputManager& manager, wgpu::CommandEncoder& encoder, const wgpu::Device& device) -> void;
   auto updateUniforms(wgpu::Queue& encoder) -> void; 
+  auto reallocBuffers(const wgpu::Device& device, const wgpu::CommandEncoder& commandEncoder,
+                      const std::span<Particle> newData) -> void;
+  
 
 public:
   ParticleSimulationLayer(uint32_t numBalls, glm::vec2 size,

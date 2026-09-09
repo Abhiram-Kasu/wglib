@@ -11,7 +11,8 @@ struct Uniforms {
   gravity: f32,
   damping: f32,
   forceAmplitude: f32,
-  decayLength: f32
+  decayLength: f32,
+  ballCount: u32
 };
 
 struct TouchUniforms {
@@ -36,7 +37,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let idx = global_id.x;
 
-    if (idx >= arrayLength(&input_buffer)) {
+    if (idx >= uniforms.ballCount) {
         return;
     }
 

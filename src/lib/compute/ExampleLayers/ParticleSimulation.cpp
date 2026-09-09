@@ -18,15 +18,15 @@ ParticleSimulationLayer::ParticleSimulationLayer(uint32_t numBalls, glm::vec2 si
                                                  float dt, float gravity, float damping, float forceAmp,
                                                  float decayLength)
     : m_numBalls(numBalls), m_size(size), m_circleRadius(circleRadius), m_ballColor(ballColor),
-      m_startLocation(startLocation),
-      m_initalParticles(genParticlesInSquareFormation(numBalls, m_size, m_startLocation, numPerRow, circleRadius)),
-      m_uniforms{ballColor, size, dt, gravity, damping, forceAmp, decayLength, numBalls},
-      m_bufferSize{sizeof(Particle) * numBalls}
+      m_inverseBallColor(glm::vec4{1, 1, 1, 0} - ballColor), m_startLocation(startLocation),
+      m_initalParticles(
+          genParticlesInSquareFormation(numBalls, m_size, m_startLocation, numPerRow, circleRadius, m_ballColor)),
+      m_uniforms{size, dt, gravity, damping, forceAmp, decayLength, numBalls}, m_bufferSize{sizeof(Particle) * numBalls}
 {
 }
 
 auto ParticleSimulationLayer::genParticlesInSquareFormation(uint32_t numBalls, glm::vec2 size, glm::vec2 start,
-                                                            uint32_t numPerRow, float ballRadius)
+                                                            uint32_t numPerRow, float ballRadius, glm::vec4 color)
     -> std::vector<Particle>
 {
     const auto ballSize = ballRadius * 2;
@@ -50,7 +50,7 @@ auto ParticleSimulationLayer::genParticlesInSquareFormation(uint32_t numBalls, g
                 return particles;
             }
             auto coordinates = start + glm::vec2{col * ballSize, row * ballSize} + offset;
-            particles.emplace_back(glm::vec2{0}, coordinates, ballRadius);
+            particles.emplace_back(glm::vec2{0}, coordinates, color, ballRadius);
         }
     }
     return particles;
@@ -221,7 +221,7 @@ auto ParticleSimulationLayer::spawnMoreParticlesAt(glm::vec2 location, size_t nu
             }
 
             particles.emplace_back(glm::vec2{0.0f}, location + glm::vec2{col * spacing, row * spacing},
-                                   static_cast<float>(m_circleRadius));
+                                   m_inverseBallColor, static_cast<float>(m_circleRadius));
         }
     }
 
@@ -328,8 +328,11 @@ auto ParticleSimulationLayer::runLogic(const InputManager &manager, wgpu::Comman
     }
     else if (manager.get_cursor_up(InputManager::MouseButton::Right))
     {
-        m_touchUniforms.touchPower = 0;
-        m_touchUniformsDirty = true;
+        if (m_touchUniforms.touchPower != 0)
+        {
+            m_touchUniforms.touchPower = 0;
+            m_touchUniformsDirty = true;
+        }
     }
 }
 

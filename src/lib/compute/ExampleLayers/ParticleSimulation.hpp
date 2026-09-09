@@ -3,22 +3,21 @@
 #include <span>
 #include "glm/vec4.hpp"
 #include "lib/CoreInput.hpp"
+#include "lib/CoreUtil.hpp"
 #include "lib/compute/ComputeLayer.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include <atomic>
 namespace wglib::compute {
 class ParticleSimulationLayer
     : public ComputeLayer<std::optional<wgpu::Texture>> {
-  struct alignas(8) Particle {
+  struct alignas(16) Particle {
     glm::vec2 velocity; // 8 bytes at offset 0
     glm::vec2 position; // 8 bytes at offset 8
-    float radius;       // 4 bytes at offset 16
-    float
-        _padding; // 4 bytes padding to make struct 24 bytes (WGSL array stride)
+    glm::vec4 color;
+    float radius;       
   };
 
   struct alignas(16) CircleUniforms {
-    glm::vec4 color;
     glm::uvec2 size;
     float dt;
     float gravity;
@@ -40,6 +39,7 @@ private:
   uint32_t m_numBalls, m_circleRadius;
   glm::vec2 m_size;
   glm::vec4 m_ballColor;
+  glm::vec4 m_inverseBallColor;
   glm::vec2 m_startLocation;
   std::vector<Particle> m_initalParticles;
   wgpu::ComputePipeline m_computePipeline;
@@ -59,7 +59,7 @@ private:
 
   static auto genParticlesInSquareFormation(uint32_t numBalls, glm::vec2 size,
                                             glm::vec2 start, uint32_t numPerRow,
-                                            float ballRadius)
+                                            float ballRadius, glm::vec4 color)
       -> std::vector<Particle>;
   auto createAndSetBindGroups(const wgpu::Device& device) -> void;
   auto spawnMoreParticlesAt(glm::vec2 location, size_t num) -> std::vector<Particle>;

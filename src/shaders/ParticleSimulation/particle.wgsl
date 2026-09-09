@@ -1,11 +1,11 @@
 struct Particle {
     velocity: vec2<f32>,
     position: vec2<f32>,
+    color: vec4<f32>,
     radius: f32
 };
 
 struct Uniforms {
-  color: vec4<f32>,
   size: vec2<u32>,
   dt: f32,
   gravity: f32,
@@ -132,7 +132,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
                 if (pixel_pos.x >= 0 && pixel_pos.x < i32(uniforms.size.x) &&
                     pixel_pos.y >= 0 && pixel_pos.y < i32(uniforms.size.y)) {
-                    textureStore(output_texture, pixel_pos, uniforms.color);
+                    textureStore(output_texture, pixel_pos, current.color);
                 }
             }
         }

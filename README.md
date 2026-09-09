@@ -6,9 +6,11 @@ A modern C++23 library for creating 2D graphics and compute applications using W
 
 - **Cross-platform rendering**: Write once, run on desktop (via Dawn) or web (via Emscripten)
 - **WebGPU-based**: Modern GPU API with compute shader support
-- **2D rendering primitives**: Built-in support for rectangles, circles, and textures
+- **2D rendering primitives**: Built-in support for rectangles, circles, triangles, and textures
 - **Compute layers**: Run GPU compute shaders for parallel processing with typed, callback-based results
 - **Update loop**: Simple callback-based update cycle for animations and game logic
+- **Resize-aware rendering/input**: Logical-size coordinates with aspect-ratio-preserving scaling on desktop and web
+- **Mouse interaction API**: Query cursor position (logical coordinates) and mouse button state via `InputManager`
 - **Modern C++23**: Leverages latest C++ features for clean, expressive code
 
 ## Requirements
@@ -76,13 +78,13 @@ int main() {
   wglib::Engine engine({800, 600}, "My Application");
 
   // Create render layers
-  wglib::render_layers::RectangleRenderLayer rect(
+  auto rect = engine.CreateRenderLayer<wglib::render_layers::RectangleRenderLayer>(
       glm::vec2{100, 100},         // position (x, y)
       glm::vec2{200, 150},         // size (width, height)
       glm::vec3{1.0f, 0.0f, 0.0f} // color (red)
   );
 
-  wglib::render_layers::CircleRenderLayer circle(
+  auto circle = engine.CreateRenderLayer<wglib::render_layers::CircleRenderLayer>(
       glm::vec2{400, 300},         // origin (x, y)
       75.0f,                        // radius
       glm::vec3{0.0f, 0.0f, 1.0f} // color (blue)
@@ -129,7 +131,8 @@ protected:
 
   // Called each frame when the layer is in the compute queue
   // Encode your compute pass and submit GPU commands here
-  virtual auto ComputeImpl(wgpu::CommandEncoder &encoder, wgpu::Queue &queue) -> void = 0;
+  virtual auto ComputeImpl(wgpu::CommandEncoder &encoder, wgpu::Queue &queue,
+                           wglib::Engine &engine) -> void = 0;
 
   // Return the result after the GPU has finished
   // The return type must match T
@@ -268,7 +271,7 @@ int main() {
 
 ### Example 3: Particle Simulation (Optional Texture Output)
 
-This example simulates thousands of particles with gravity and repulsion forces, rendering the result to a texture. The result is wrapped in `std::optional` because the texture may not be ready on the first callback.
+This example simulates thousands of particles with gravity and repulsion forces, rendering the result to a texture. It also supports live interaction: left click spawns additional particles and right click applies a touch force at the cursor. The result is wrapped in `std::optional` because the texture may not be ready on the first callback.
 
 **Result type**: `std::optional<wgpu::Texture>`
 
@@ -365,7 +368,8 @@ protected:
     m_bindGroup = device.CreateBindGroup(&bgDesc);
   }
 
-  auto ComputeImpl(wgpu::CommandEncoder &encoder, wgpu::Queue &queue)
+  auto ComputeImpl(wgpu::CommandEncoder &encoder, wgpu::Queue &queue,
+                   wglib::Engine &engine)
       -> void override {
     // Upload input data
     queue.WriteBuffer(m_inputBuffer, 0, m_inputData.data(),
@@ -498,7 +502,7 @@ engine.Start();
 
 ## Render Layers
 
-The library provides three built-in render layer types:
+The library provides four built-in render layer types:
 
 - **RectangleRenderLayer**: Renders filled rectangles
   - Constructor: `RectangleRenderLayer(glm::vec2 position, glm::vec2 size, glm::vec3 color)`
@@ -509,9 +513,13 @@ The library provides three built-in render layer types:
   - Methods: `setOrigin()`, `setRadius()`, `setColor()`, `setResolution()`, `getOrigin()`, `getRadius()`, `getColor()`, `getResolution()`
 
 - **TextureRenderLayer**: Renders a GPU texture to the screen
-  - Constructor: `TextureRenderLayer(float width, float height)` or `TextureRenderLayer(wgpu::Texture* texture, float width, float height)`
-  - Methods: `setTexture(wgpu::Texture)`, `getTexture()`
+  - Constructor: `TextureRenderLayer(float width, float height)` or `TextureRenderLayer(wgpu::Texture texture, float width, float height)`
+  - Methods: `setTexture(wgpu::Texture)`, `getTexture()` (returns `std::optional<wgpu::Texture>`)
   - Primary use case: displaying the output of a compute shader
+
+- **TriangleRenderLayer**: Renders a triangle from three vertices
+  - Constructor: `TriangleRenderLayer(std::array<Vertex, 3> vertices)`
+  - Methods: `setVertices()`, `setVertex<Index>()`, `getVertices()`
 
 ### Creating Custom Render Layers
 
@@ -541,22 +549,26 @@ wglib is built on several core components:
    - Maintains uniform buffers for screen size
    - Calls `Render()` on all layers queued via `engine.Draw()`
 
-3. **WindowManager**: Platform abstraction for window creation.
+3. **WindowManager**: Platform abstraction for window creation and surface sizing.
    - GLFW on desktop
    - Emscripten canvas on the web
-   - Handles surface creation and swapchain presentation
+   - Handles surface creation, resize events, and aspect-ratio-preserving logical↔physical transforms
 
-4. **ComputeEngine** (`ComputeEngine.hpp/cpp`): Manages GPU compute operations.
+4. **InputManager** (`CoreInput.hpp/cpp`): Mouse input utilities.
+   - Reads mouse button state (`get_cursor_down`, `get_cursor_up`)
+   - Converts cursor position into logical coordinates with HiDPI-aware scaling
+
+5. **ComputeEngine** (`ComputeEngine.hpp/cpp`): Manages GPU compute operations.
    - Holds a queue of `ComputeTask` entries (layer + completion callback)
    - Drains the queue at the start of each frame — each task creates a `CommandEncoder`, calls `layer->ComputeImpl()`, submits work, and registers an `OnSubmittedWorkDone` callback that calls `layer->getResult()` and forwards it to the user callback
    - `InitComputeLayer<T>(args...)` constructs the layer and calls `InitImpl` once
 
-5. **ComputeLayer** (`ComputeLayer.hpp`): Abstract base for user-defined compute operations.
+6. **ComputeLayer** (`ComputeLayer.hpp`): Abstract base for user-defined compute operations.
    - Templated on result type `T`
    - Exposes `ResultType` alias for type deduction
    - The three virtual methods (`InitImpl`, `ComputeImpl`, `getResultImpl`) are the only API surface users need to implement
 
-6. **Render Layers**: Modular rendering units.
+7. **Render Layers**: Modular rendering units.
    - Each layer owns its GPU resources
    - Render pipeline instances are shared across layer instances of the same type
 
@@ -615,16 +627,18 @@ Because `ProcessEvents` runs **before** rendering, compute results from the curr
 ```
 wglib/
 ├── src/
-│   ├── main.cpp                      # Example application (4 demos)
+│   ├── main.cpp                      # Example application (multiple demos)
 │   ├── lib/
 │   │   ├── CoreEngine.hpp/cpp        # Main engine
 │   │   ├── CoreRenderer.hpp/cpp      # Rendering system
 │   │   ├── CoreUtil.hpp              # Utility functions (logging, buffer helpers)
-│   │   ├── WindowManager.*           # Window management (GLFW / Emscripten)
+│   │   ├── WindowManager.*           # Window + surface management (GLFW / Emscripten)
+│   │   ├── CoreInput.*               # Mouse input helpers (logical coordinates)
 │   │   ├── render_layer/             # Render layer implementations
 │   │   │   ├── RenderLayer.hpp       # Abstract base class
 │   │   │   ├── RectangleRenderLayer.*
 │   │   │   ├── CircleRenderLayer.*
+│   │   │   ├── TriangleRenderLayer.*
 │   │   │   ├── TextureRenderLayer.*
 │   │   │   └── Vertex.hpp
 │   │   └── compute/                  # Compute system
@@ -648,5 +662,5 @@ wglib/
 
 ## Future TODO
 
-- Event processing (keyboard, mouse)
+- Event processing (keyboard)
 - Manual Engine Tick Mode to control when the update cycle runs

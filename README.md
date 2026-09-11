@@ -1,93 +1,228 @@
 # wglib
 
-A modern C++23 library for creating 2D graphics and compute applications using WebGPU. Build native desktop applications or compile to WebAssembly for the web.
+wglib is a C++23 library for building 2D graphics and GPU-compute applications with WebGPU. The same public API can target a native desktop window or WebAssembly in a browser.
 
-## Features
+The project is distributed as a reusable CMake library. Native builds produce a shared library by default; static native builds and WebAssembly builds are also supported.
 
-- **Cross-platform rendering**: Write once, run on desktop (via Dawn) or web (via Emscripten)
-- **WebGPU-based**: Modern GPU API with compute shader support
-- **2D rendering primitives**: Built-in support for rectangles, circles, triangles, and textures
-- **Compute layers**: Run GPU compute shaders for parallel processing with typed, callback-based results
-- **Update loop**: Simple callback-based update cycle for animations and game logic
-- **Resize-aware rendering/input**: Logical-size coordinates with aspect-ratio-preserving scaling on desktop and web
-- **Mouse interaction API**: Query cursor position (logical coordinates) and mouse button state via `InputManager`
-- **Modern C++23**: Leverages latest C++ features for clean, expressive code
+## What you get
+
+- A small engine with a callback-based update loop.
+- WebGPU rendering through Dawn on desktop and Emscripten on the web.
+- Built-in rectangle, circle, triangle, and texture render layers.
+- Typed, asynchronous compute-layer callbacks.
+- WGSL shader support, including bundled example shaders.
+- Logical coordinates with aspect-ratio-preserving resizing.
+- Mouse position and button state through `InputManager`.
+- Installable CMake targets and TGZ/ZIP packages.
 
 ## Requirements
 
-### Desktop Build
-- CMake 3.22 or higher
-- C++23 compatible compiler (GCC 13+, Clang 16+, or MSVC 2022+). Only tested with Clang however.
-- GLFW (fetched automatically)
-- Dawn WebGPU implementation (included as submodule)
-- GLM library (fetched automatically)
+### Native desktop
 
-### Web Build
-- Emscripten SDK
-- Ninja build system
-- All other dependencies are handled by Emscripten
+- CMake 3.22 or newer.
+- A compiler and standard library with C++23 support. Clang is the primary tested toolchain; GCC 13+ and MSVC 2022+ are expected to work.
+- Ninja is recommended, although another CMake generator can be used.
+- A platform WebGPU-capable graphics environment and the normal GLFW system prerequisites.
 
-## Building
+GLM is fetched by CMake. Dawn is kept as a pinned submodule and fetches the Dawn dependencies needed by the selected build.
 
-### Getting the Code
+### WebAssembly
+
+- The Emscripten SDK (`emcmake`, `em++`, and `emrun`).
+- Ninja.
+- A local HTTP server for testing the generated page.
+
+The web build uses Emscripten's WebGPU implementation and does not install the native Dawn package.
+
+## Get the source
+
+Initialize the direct Dawn submodule after cloning:
 
 ```bash
-# Clone the repository with all submodules
-git clone --recurse-submodules https://github.com/Abhiram-Kasu/wglib.git
+git clone https://github.com/Abhiram-Kasu/wglib.git
 cd wglib
+git submodule update --init dawn
 ```
 
-### Desktop Build
+Only the direct `dawn` submodule is required in the checkout. Dawn's CMake dependency step obtains the dependencies it needs. A recursive submodule checkout is not necessary.
+
+## Quick start: native desktop
+
+Configure and build the bundled demo:
 
 ```bash
-# Create an out-of-source build directory
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DWGLIB_BUILD_EXAMPLES=ON
 
-# Build the reusable library and desktop example
-cmake --build build --target wglib_demo
-
-# Run the example
+cmake --build build --target wglib_demo --parallel
 ./build/wglib_demo
 ```
 
-### Web Build
+The demo runs Conway's Game of Life by default. It also contains several small demonstrations:
+
+```text
+./build/wglib_demo 0    particle simulation
+./build/wglib_demo 1    simple refactor/render test
+./build/wglib_demo 2    Conway's Game of Life
+./build/wglib_demo 3    triangle rendering
+./build/wglib_demo 4    mouse interaction test
+```
+
+## Quick start: WebAssembly
+
+Activate an Emscripten SDK, then configure and build with the Emscripten toolchain:
 
 ```bash
-mkdir build_web && cd build_web
-emcmake cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build . --target wglib_demo
+emcmake cmake -S . -B build_web -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DWGLIB_BUILD_EXAMPLES=ON \
+  -DWGLIB_INSTALL=OFF \
+  -DWGLIB_BUILD_TESTS=OFF
 
-# Serve the result (use any web server)
+cmake --build build_web --target wglib_demo --parallel
+```
+
+This generates `build_web/wglib_demo.html` and its companion files. Serve the build directory rather than opening the HTML file directly:
+
+```bash
+cd build_web
 python3 -m http.server 8000
-# Open http://localhost:8000/wglib_demo.html in your browser
 ```
 
-### Install the library
+Open <http://localhost:8000/wglib_demo.html> in a WebGPU-capable browser.
+
+## Use wglib from another CMake project
+
+There are two supported integration styles. Installing a package is the best choice for applications that consume a released build. Adding the source tree is useful when developing wglib and the application together.
+
+### Option 1: install and `find_package`
+
+Build and install the native library:
 
 ```bash
-cmake -S . -B build -G Ninja -DWGLIB_BUILD_EXAMPLES=OFF \
-  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD/install"
-cmake --build build --target wglib wglib_examples
-cmake --install build
+cmake -S . -B build_install -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DWGLIB_BUILD_EXAMPLES=OFF \
+  -DWGLIB_BUILD_TESTS=OFF \
+  -DCMAKE_INSTALL_PREFIX="$PWD/install"
+
+cmake --build build_install --target wglib --parallel
+cmake --install build_install
 ```
 
-An installed consumer can use the exported target:
+The install contains public headers, the library, CMake package files, GLM, the required WebGPU/GLFW headers, and the runtime WGSL shaders.
+
+In the consuming project:
 
 ```cmake
+cmake_minimum_required(VERSION 3.22)
+project(my_webgpu_app LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 find_package(wglib CONFIG REQUIRED)
 
-add_executable(my_app main.cpp)
-target_link_libraries(my_app PRIVATE wglib::wglib)
+add_executable(my_webgpu_app main.cpp)
+target_link_libraries(my_webgpu_app PRIVATE wglib::wglib)
 ```
 
-For source-based development, use `FetchContent` with a tagged revision and
-recursive submodules. The native library is shared by default so Dawn and
-GLFW remain implementation details of the installed package; set
-`-DWGLIB_LIBRARY_TYPE=STATIC` when building a static source tree.
+Configure that project with the install prefix:
 
-## How to Use
+```bash
+cmake -S . -B build -G Ninja \
+  -DCMAKE_PREFIX_PATH="/path/to/wglib/install"
+cmake --build build --parallel
+```
 
-### Basic Setup
+Use `wglib::examples` in addition to `wglib::wglib` when using the compiled example compute layers such as Conway's Game of Life or the particle simulation:
+
+```cmake
+target_link_libraries(my_webgpu_app PRIVATE wglib::wglib wglib::examples)
+```
+
+The `ExampleLayer<N>` template is header-only and does not require `wglib::examples`.
+
+### Option 2: add a checked-out source tree
+
+When the wglib checkout has its `dawn` submodule initialized, a consuming project can add it directly:
+
+```cmake
+set(WGLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(WGLIB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(WGLIB_INSTALL OFF CACHE BOOL "" FORCE)
+add_subdirectory(path/to/wglib wglib-build)
+
+add_executable(my_webgpu_app main.cpp)
+target_link_libraries(my_webgpu_app PRIVATE wglib::wglib)
+```
+
+For a Git-based `FetchContent` integration, fetch the direct Dawn submodule as well:
+
+```cmake
+include(FetchContent)
+
+FetchContent_Declare(wglib
+  GIT_REPOSITORY https://github.com/Abhiram-Kasu/wglib.git
+  GIT_TAG main
+  GIT_SHALLOW TRUE
+  GIT_SUBMODULES dawn
+  GIT_SUBMODULES_RECURSE FALSE
+)
+
+set(WGLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(WGLIB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(WGLIB_INSTALL OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(wglib)
+
+add_executable(my_webgpu_app main.cpp)
+target_link_libraries(my_webgpu_app PRIVATE wglib::wglib)
+```
+
+For reproducible builds, replace `main` with a published release tag such as `v0.1.0` when one is available.
+
+## CMake options and targets
+
+The most useful configuration options are:
+
+| Option | Default | Purpose |
+|---|---:|---|
+| `WGLIB_BUILD_EXAMPLES` | `ON` | Build `wglib_demo`. |
+| `WGLIB_BUILD_TESTS` | `OFF` | Build the API smoke test and enable CTest. |
+| `WGLIB_INSTALL` | `ON` native, `OFF` web | Generate install rules and export the CMake package. |
+| `WGLIB_FETCH_DEPENDENCIES` | `ON` | Fetch GLM and allow dependency setup during configuration. |
+| `WGLIB_LIBRARY_TYPE` | `SHARED` native | Select `SHARED` or `STATIC` for native `wglib`. WebAssembly always uses a static library. |
+
+The main targets are:
+
+| Target | Description |
+|---|---|
+| `wglib::wglib` | Core rendering, window, input, and compute engine. |
+| `wglib::examples` | Compiled built-in compute examples. Links publicly to `wglib::wglib`. |
+| `wglib_demo` | Bundled desktop/WebAssembly demo when examples are enabled. |
+| `wglib_api_smoke` | Small link/API test when tests are enabled. |
+
+Useful configurations:
+
+```bash
+# Debug library plus tests
+cmake -S . -B build_debug -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DWGLIB_BUILD_TESTS=ON
+
+# Native static library
+cmake -S . -B build_static -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DWGLIB_LIBRARY_TYPE=STATIC \
+  -DWGLIB_BUILD_EXAMPLES=OFF
+```
+
+CMake always enables `CMAKE_EXPORT_COMPILE_COMMANDS`. The generated database lives inside the selected build directory. A root-level `compile_commands.json` symlink is optional and is ignored by Git.
+
+## First application
+
+The engine owns the WebGPU device, window, renderer, and frame loop. Create render layers once, draw them from `OnUpdate`, and call `Start()`:
 
 ```cpp
 #include <wglib/CoreEngine.hpp>
@@ -95,139 +230,23 @@ GLFW remain implementation details of the installed package; set
 #include <wglib/render_layer/RectangleRenderLayer.hpp>
 
 int main() {
-  // Create engine with window size and title
-  wglib::Engine engine({800, 600}, "My Application");
+  wglib::Engine engine({800, 600}, "My application");
 
-  // Create render layers
-  auto rect = engine.CreateRenderLayer<wglib::render_layers::RectangleRenderLayer>(
-      glm::vec2{100, 100},         // position (x, y)
-      glm::vec2{200, 150},         // size (width, height)
-      glm::vec3{1.0f, 0.0f, 0.0f} // color (red)
-  );
+  auto rectangle =
+      engine.CreateRenderLayer<wglib::render_layers::RectangleRenderLayer>(
+          glm::vec2{100, 100},
+          glm::vec2{200, 150},
+          glm::vec3{1, 0, 0});
 
-  auto circle = engine.CreateRenderLayer<wglib::render_layers::CircleRenderLayer>(
-      glm::vec2{400, 300},         // origin (x, y)
-      75.0f,                        // radius
-      glm::vec3{0.0f, 0.0f, 1.0f} // color (blue)
-  );
+  auto circle =
+      engine.CreateRenderLayer<wglib::render_layers::CircleRenderLayer>(
+          glm::vec2{400, 300},
+          75.0f,
+          glm::vec3{0, 0, 1});
 
-  // Set up update callback — called once per frame with delta time in seconds
-  engine.OnUpdate([&](float deltaTime) {
-    engine.Draw(rect);
-    engine.Draw(circle);
-  });
-
-  // Start the main loop
-  engine.Start();
-}
-```
-
----
-
-## Compute Layers
-
-Compute layers are the primary mechanism for running GPU compute shaders in wglib. Each compute layer encapsulates a complete GPU pipeline — buffers, bind groups, and compute pass encoding — and delivers results back to the CPU through a typed callback.
-
-### How Compute Layers Work
-
-The lifecycle of a compute layer has three phases:
-
-1. **Initialization** (`InitImpl`) — Create all GPU resources once: buffers, the compute pipeline, and bind groups. Called automatically when you call `engine.InitComputeLayer`.
-2. **Execution** (`ComputeImpl`) — Upload data, encode the compute pass, and submit GPU commands. Called by the engine each time the layer is in the compute queue.
-3. **Result retrieval** (`getResultImpl`) — Return the result after the GPU has finished. Called internally and forwarded to the user callback registered with `PushComputeLayer`.
-
-### The `ComputeLayer<T>` Template
-
-Every compute layer inherits from `wglib::compute::ComputeLayer<T>`, where `T` is the type returned to the callback. This provides full type safety — no casting required.
-
-```cpp
-template <typename T>
-class ComputeLayer : public IComputeLayer {
-public:
-  using ResultType = T;  // Exposed so the engine can deduce the result type
-
-protected:
-  // Called once during InitComputeLayer — allocate GPU resources here
-  virtual auto InitImpl(wgpu::Device &device) -> void = 0;
-
-  // Called each frame when the layer is in the compute queue
-  // Encode your compute pass and submit GPU commands here
-  virtual auto ComputeImpl(wgpu::CommandEncoder &encoder, wgpu::Queue &queue,
-                           wglib::Engine &engine) -> void = 0;
-
-  // Return the result after the GPU has finished
-  // The return type must match T
-  virtual auto getResultImpl() -> T = 0;
-};
-```
-
-### Engine API for Compute
-
-```cpp
-// 1. Create and initialize a compute layer (constructs LayerType with args...)
-//    Returns a typed handle — keep it alive for as long as you need the layer
-auto handle = engine.InitComputeLayer<LayerType>(args...);
-
-// 2. Queue the layer for execution this frame with a typed callback
-//    The callback receives a value of type LayerType::ResultType
-engine.PushComputeLayer(handle, [](ResultType result) {
-  // Use result here
-});
-
-// 3. Call engine.Start() to begin the main loop
-engine.Start();
-```
-
-`InitComputeLayer` constructs the layer with the provided arguments, calls `InitImpl` on the GPU device, and returns a `ComputeLayerHandle<T>`. The handle must remain in scope for the lifetime of the layer.
-
-`PushComputeLayer` enqueues the layer for the **current frame**. Compute layers are processed at the start of each frame before rendering. To run a layer every frame, call `PushComputeLayer` again from within the callback (see the Conway's Game of Life example below).
-
----
-
-### Example 1: Array Multiplication (CPU Readback)
-
-This example uses the built-in `ExampleLayer<N>`, which multiplies an array of N floats by a scalar on the GPU and reads the results back to the CPU.
-
-**Result type**: `std::optional<std::span<const float, N>>`
-
-- Returns `std::nullopt` if the GPU mapping has not completed yet.
-- Returns a `std::span` over the mapped staging buffer once the data is ready.
-
-```cpp
-#include <wglib/CoreEngine.hpp>
-#include <wglib/compute/ExampleLayers/ExampleLayer.hpp>
-#include <wglib/render_layer/RectangleRenderLayer.hpp>
-#include <wglib/render_layer/CircleRenderLayer.hpp>
-#include <numbers>
-#include <ranges>
-
-int main() {
-  wglib::Engine engine({500, 500}, "Compute Example");
-
-  wglib::render_layers::RectangleRenderLayer rect(
-      glm::vec2{0, 0}, glm::vec2{100, 100}, glm::vec3{0.0f, 1.0f, 0.0f});
-  wglib::render_layers::CircleRenderLayer circle(
-      glm::vec2{250, 250}, 50.0f, glm::vec3{0.0f, 0.0f, 1.0f});
-
-  // Initialize ExampleLayer<50000>: generates [0..49999] and multiplies by π
-  auto compute = engine.InitComputeLayer<wglib::compute::ExampleLayer<50000>>(
-      static_cast<float>(std::numbers::pi));
-
-  // Queue compute once — the callback fires when the GPU finishes
-  engine.PushComputeLayer(
-      compute, [](std::optional<std::span<const float, 50000>> res) {
-        if (!res) {
-          wglib::util::log("Results not ready yet");
-          return;
-        }
-        // Print the first 10 results: 0, π, 2π, 3π, ...
-        for (const auto &item : *res | std::ranges::views::take(10)) {
-          wglib::util::log("Item: {}", item);
-        }
-      });
-
-  engine.OnUpdate([&](float dt) {
-    engine.Draw(rect);
+  engine.OnUpdate([&](float delta_time) {
+    (void)delta_time;
+    engine.Draw(rectangle);
     engine.Draw(circle);
   });
 
@@ -235,441 +254,229 @@ int main() {
 }
 ```
 
-**What happens under the hood**:
-1. `InitComputeLayer` constructs `ExampleLayer<50000>(π)` and calls `InitImpl`, which creates an input buffer, output buffer, staging buffer, and uniform buffer, then builds the compute pipeline and bind group.
-2. `PushComputeLayer` enqueues the layer. At the start of the next frame, `ComputeImpl` uploads the input data and multiplier, encodes a compute pass (`DispatchWorkgroups(ceil(50000/64))`), copies the result into a staging buffer, and maps it asynchronously.
-3. When the GPU signals completion, the engine calls your callback with the mapped span.
+`CreateRenderLayer` returns a typed handle. Keep that handle alive while the layer is in use. Positions and sizes use the engine's logical coordinate system; resizing preserves the logical aspect ratio.
 
----
+Useful engine methods include:
 
-### Example 2: Conway's Game of Life (Texture Output)
+- `OnUpdate(callback)`: register the per-frame callback. The callback receives delta time in seconds.
+- `Draw(handle)`: queue a render layer for the current frame.
+- `SetTargetFPS(fps)`: set a target frame interval; pass a non-positive value to disable the limit.
+- `Input()`: access mouse position and button state.
+- `GetWindow()`, `GetDevice()`, and `GetWindowSize()`: access the underlying window/device or logical size.
 
-This example runs a cellular automaton on the GPU and outputs the result as a `wgpu::Texture` rendered to the screen via a `TextureRenderLayer`. The computation is chained so that each callback immediately re-queues the layer for the next frame.
+## Render layers
 
-**Result type**: `const wgpu::Texture &`
+Include the layer you need from `wglib/render_layer/`:
+
+- `RectangleRenderLayer(position, size, color)` with `setPosition`, `setSize`, and `setColor`.
+- `CircleRenderLayer(origin, radius, color, resolution = 50)` with setters for origin, radius, resolution, and color.
+- `TriangleRenderLayer(std::array<Vertex, 3>)` for custom colored triangles.
+- `TextureRenderLayer(width, height)` or `TextureRenderLayer(texture, width, height)` for displaying a `wgpu::Texture`.
+
+To create a custom layer, derive from `wglib::render_layers::RenderLayer` and implement:
 
 ```cpp
-#include <wglib/CoreEngine.hpp>
-#include <wglib/compute/ExampleLayers/ConwaysGameOfLife.hpp>
-#include <wglib/render_layer/TextureRenderLayer.hpp>
-
-int main() {
-  wglib::Engine engine({2560, 1440}, "Conway's Game of Life");
-
-  // Initialize the compute layer with the grid dimensions
-  auto compute =
-      engine.InitComputeLayer<wglib::compute::ConwaysGameOfLifeComputeLayer>(
-          glm::vec2{2560, 1440});
-
-  wglib::render_layers::TextureRenderLayer textureLayer{2560, 1440};
-
-  engine.SetTargetFPS(120.0);
-
-  // Use a recursive lambda to re-queue the layer every frame
-  std::function<void()> runIteration;
-  runIteration = [&]() {
-    engine.PushComputeLayer(compute, [&](wgpu::Texture texture) {
-      // Update the texture layer with the new simulation state
-      textureLayer.setTexture(std::move(texture));
-      // Queue the next iteration
-      runIteration();
-    });
-  };
-
-  engine.OnUpdate([&](float) { engine.Draw(textureLayer); });
-
-  runIteration(); // Kick off the first iteration
-  engine.Start();
-}
+Render(wgpu::RenderPassEncoder&)
+InitRes(const wgpu::Device&, wgpu::TextureFormat,
+        const wgpu::BindGroupLayout&)
+UpdateRes(const wgpu::Device&)
 ```
 
-**Key design points**:
-- `ConwaysGameOfLifeComputeLayer` uses **two ping-pong storage buffers**: each frame, the current generation is read from one buffer and the next generation is written to the other. The buffers are then swapped.
-- The result texture is written directly by the compute shader and returned by reference from `getResultImpl`.
-- Re-queuing inside the callback ensures the simulation runs continuously, one step per frame.
+`Render` encodes draw calls, `InitRes` creates GPU resources, and `UpdateRes` uploads mutable per-frame data.
 
----
+## Compute layers
 
-### Example 3: Particle Simulation (Optional Texture Output)
-
-This example simulates thousands of particles with gravity and repulsion forces, rendering the result to a texture. It also supports live interaction: left click spawns additional particles and right click applies a touch force at the cursor. The result is wrapped in `std::optional` because the texture may not be ready on the first callback.
-
-**Result type**: `std::optional<wgpu::Texture>`
+Compute layers are typed around their callback result. Initialize a layer once, then queue it whenever work should run:
 
 ```cpp
-#include <wglib/CoreEngine.hpp>
-#include <wglib/compute/ExampleLayers/ParticleSimulation.hpp>
-#include <wglib/render_layer/TextureRenderLayer.hpp>
+auto compute =
+    engine.InitComputeLayer<wglib::compute::ExampleLayer<1024>>(2.0f);
 
-int main() {
-  wglib::Engine engine({2560, 1440}, "Particle Simulation");
-
-  // Arguments: numParticles, screenSize, particleRadius, color,
-  //            initialCenter, spread, deltaTime, speed,
-  //            damping, repulsionStrength, attractionRadius
-  auto compute =
-      engine.InitComputeLayer<wglib::compute::ParticleSimulationLayer>(
-          10000, glm::vec2{2560, 1440}, 2, glm::vec4{0, 1, 1, 1},
-          glm::vec2{500, 500}, 100, 0.016, 500, 0.98, 2000, 50);
-
-  wglib::render_layers::TextureRenderLayer textureLayer{2560, 1440};
-
-  engine.SetTargetFPS(120.0);
-
-  std::function<void()> runIteration;
-  runIteration = [&]() {
-    engine.PushComputeLayer(compute, [&](std::optional<wgpu::Texture> res) {
-      if (!res) {
-        wglib::util::log("Texture not ready");
-        return;
+engine.PushComputeLayer(
+    compute,
+    [](std::optional<std::span<const float, 1024>> result) {
+      if (!result) {
+        return; // GPU readback is not ready yet.
       }
-      textureLayer.setTexture(std::move(*res));
-      runIteration();
+      // Consume the typed result.
     });
-  };
-
-  engine.OnUpdate([&](float) { engine.Draw(textureLayer); });
-
-  runIteration();
-  engine.Start();
-}
 ```
 
----
+`InitComputeLayer` constructs the layer and initializes its GPU resources. Keep the returned handle alive. `PushComputeLayer` queues one execution and invokes the callback after the submitted GPU work completes.
 
-### Writing a Custom Compute Layer
+The built-in compute layers are:
 
-To implement your own compute layer, subclass `ComputeLayer<T>` and implement the three protected methods.
+- `ExampleLayer<N>`: multiplies a generated array by a scalar and returns an optional fixed-size span.
+- `ConwaysGameOfLifeComputeLayer`: runs a ping-pong cellular automaton and returns a texture.
+- `ParticleSimulationLayer`: simulates particles and returns an optional texture.
 
-#### Step 1 — Define the class
+For a continuously running simulation, queue the next operation from the completion callback:
 
 ```cpp
-#include <wglib/compute/ComputeLayer.hpp>
-#include <wglib/CoreUtil.hpp>
+std::function<void()> run_next;
+run_next = [&] {
+  engine.PushComputeLayer(compute, [&](wgpu::Texture texture) {
+    texture_layer->setTexture(std::move(texture));
+    run_next();
+  });
+};
 
-// T is the type your callback will receive.
-// Use std::optional<T> if the result may not be available immediately.
-class MyComputeLayer : public wglib::compute::ComputeLayer<std::vector<float>> {
-  wgpu::Buffer m_inputBuffer;
-  wgpu::Buffer m_outputBuffer;
-  wgpu::Buffer m_stagingBuffer;
-  wgpu::ComputePipeline m_pipeline;
-  wgpu::BindGroup m_bindGroup;
+run_next();
+```
 
-  std::vector<float> m_inputData;
-  std::vector<float> m_result;
+When a compute shader writes a texture, display it with `TextureRenderLayer`:
 
+```cpp
+auto texture_layer =
+    engine.CreateRenderLayer<wglib::render_layers::TextureRenderLayer>(
+        1280, 720);
+
+engine.OnUpdate([&](float) { engine.Draw(texture_layer); });
+```
+
+### Writing a custom compute layer
+
+Derive from `ComputeLayer<T>`, where `T` is the result type delivered to the callback:
+
+```cpp
+class DoubleValues
+    : public wglib::compute::ComputeLayer<std::vector<float>> {
 protected:
-  auto InitImpl(wgpu::Device &device) -> void override {
-    // Create buffers, load the shader, build pipeline and bind group
-    m_inputBuffer = wglib::util::createBuffer<float,
-        wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopyDst>(
-        device, m_inputData.size());
-    m_outputBuffer = wglib::util::createBuffer<float,
-        wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc>(
-        device, m_inputData.size());
-    m_stagingBuffer = wglib::util::createBuffer<float,
-        wgpu::BufferUsage::MapRead | wgpu::BufferUsage::CopyDst>(
-        device, m_inputData.size());
-
-    auto shaderModule = wglib::util::createShaderModuleFromFile(
-        "shaders/my_shader.wgsl", device);
-    wgpu::ComputePipelineDescriptor desc{.compute = {.module = shaderModule}};
-    m_pipeline = device.CreateComputePipeline(&desc);
-
-    wgpu::BindGroupEntry entries[] = {
-        {.binding = 0, .buffer = m_inputBuffer},
-        {.binding = 1, .buffer = m_outputBuffer},
-    };
-    wgpu::BindGroupDescriptor bgDesc{
-        .layout = m_pipeline.GetBindGroupLayout(0),
-        .entryCount = 2,
-        .entries = entries,
-    };
-    m_bindGroup = device.CreateBindGroup(&bgDesc);
+  void InitImpl(wgpu::Device& device) override {
+    // Create buffers, bind groups, pipelines, and other resources.
   }
 
-  auto ComputeImpl(wgpu::CommandEncoder &encoder, wgpu::Queue &queue,
-                   wglib::Engine &engine)
-      -> void override {
-    // Upload input data
-    queue.WriteBuffer(m_inputBuffer, 0, m_inputData.data(),
-                      m_inputData.size() * sizeof(float));
-
-    // Encode the compute pass
-    auto pass = encoder.BeginComputePass();
-    pass.SetPipeline(m_pipeline);
-    pass.SetBindGroup(0, m_bindGroup);
-    pass.DispatchWorkgroups(
-        wglib::util::divCeil(m_inputData.size(), 64uz));
-    pass.End();
-
-    // Copy result to staging buffer for CPU readback
-    encoder.CopyBufferToBuffer(m_outputBuffer, 0, m_stagingBuffer, 0,
-                               m_inputData.size() * sizeof(float));
-
-    auto commands = encoder.Finish();
-    queue.Submit(1, &commands);
-
-    // Asynchronously map the staging buffer
-    m_stagingBuffer.MapAsync(
-        wgpu::MapMode::Read, 0, m_stagingBuffer.GetSize(),
-        wgpu::CallbackMode::AllowSpontaneous,
-        [&](wgpu::MapAsyncStatus status, wgpu::StringView) {
-          if (status == wgpu::MapAsyncStatus::Success) {
-            auto *ptr = static_cast<const float *>(
-                m_stagingBuffer.GetConstMappedRange());
-            m_result.assign(ptr, ptr + m_inputData.size());
-          }
-        });
+  void ComputeImpl(wgpu::CommandEncoder& encoder,
+                   wgpu::Queue& queue,
+                   wglib::Engine& engine) override {
+    // Upload inputs, encode the WGSL compute pass, submit it, and
+    // asynchronously prepare the result.
   }
 
-  auto getResultImpl() -> std::vector<float> override {
-    return m_result;
+  std::vector<float> getResultImpl() override {
+    return result_;
   }
 
-public:
-  explicit MyComputeLayer(std::vector<float> input)
-      : m_inputData(std::move(input)) {}
+private:
+  std::vector<float> result_;
 };
 ```
 
-#### Step 2 — Write the WGSL compute shader
+The three protected methods have distinct responsibilities:
 
-```wgsl
-// shaders/my_shader.wgsl
+1. `InitImpl` runs once and allocates GPU resources.
+2. `ComputeImpl` runs for each queued execution and submits GPU work.
+3. `getResultImpl` returns the value passed to the completion callback.
 
-@group(0) @binding(0) var<storage, read>       input  : array<f32>;
-@group(0) @binding(1) var<storage, read_write> output : array<f32>;
+WGSL files can be loaded with `wglib::util::shaderPath("my_shader.wgsl")` and `wglib::util::createShaderModuleFromFile(...)`. Native applications normally run with a `shaders/` directory beside the executable or from the installed layout. The WebAssembly build packages shaders into the Emscripten virtual filesystem under `/src/shaders/`.
 
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let i = global_id.x;
-    if (i < arrayLength(&input)) {
-        output[i] = input[i] * 2.0;
-    }
-}
+## Frame and compute order
+
+Each frame follows this order:
+
+1. Poll window events.
+2. Process completed WebGPU callbacks from earlier submissions.
+3. Run the user's `OnUpdate` callback.
+4. Submit compute work queued during the update callback.
+5. Render layers queued with `Draw`.
+
+As a result, a compute callback is asynchronous and may run on a later frame. For an every-frame simulation, re-queue from the completion callback or use an in-flight flag so work does not pile up.
+
+## Tests and validation
+
+Configure tests and run them with CTest:
+
+```bash
+cmake -S . -B build_tests -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DWGLIB_BUILD_EXAMPLES=OFF \
+  -DWGLIB_BUILD_TESTS=ON
+
+cmake --build build_tests --target wglib wglib_examples wglib_api_smoke --parallel
+ctest --test-dir build_tests --output-on-failure
 ```
 
-#### Step 3 — Use it from the engine
+The repository also contains an installed-package consumer at `tests/consumer`:
 
-```cpp
-int main() {
-  wglib::Engine engine({800, 600}, "My Compute App");
-
-  std::vector<float> data = {1.0f, 2.0f, 3.0f, 4.0f};
-
-  auto handle = engine.InitComputeLayer<MyComputeLayer>(data);
-
-  engine.PushComputeLayer(handle, [](std::vector<float> result) {
-    for (float v : result) {
-      wglib::util::log("Result: {}", v); // 2, 4, 6, 8
-    }
-  });
-
-  engine.OnUpdate([](float) {});
-  engine.Start();
-}
+```bash
+cmake --install build_install
+cmake -S tests/consumer -B build_consumer -G Ninja \
+  -DCMAKE_PREFIX_PATH="$PWD/install"
+cmake --build build_consumer --parallel
+./build_consumer/wglib_consumer
 ```
 
----
+## Packaging
 
-### Continuous vs. One-Shot Compute
+After installing/configuring a native build, create distributable TGZ and ZIP archives:
 
-| Pattern | When to use | How |
-|---|---|---|
-| **One-shot** | Compute once and read back results (e.g., data preprocessing) | Call `PushComputeLayer` once before `Start()` |
-| **Every-frame** | Simulations, real-time effects (e.g., Game of Life, particles) | Re-call `PushComputeLayer` at the end of the callback |
-| **Conditional** | Run compute only when inputs change | Call `PushComputeLayer` from inside `OnUpdate` when needed |
-
-**Every-frame pattern** (used by the built-in examples):
-```cpp
-std::function<void()> loop;
-loop = [&]() {
-  engine.PushComputeLayer(handle, [&](MyResult result) {
-    // process result ...
-    loop(); // re-queue for next frame
-  });
-};
-loop(); // start the chain
-engine.Start();
+```bash
+cmake -S . -B build_package -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DWGLIB_BUILD_EXAMPLES=OFF \
+  -DWGLIB_BUILD_TESTS=ON
+cmake --build build_package --target wglib wglib_examples wglib_api_smoke --parallel
+ctest --test-dir build_package --output-on-failure
+cmake --install build_package
+cpack --config build_package/CPackConfig.cmake
 ```
 
----
+Packages are written to `build_package/packages/` and contain the versioned wglib library, public headers, CMake package metadata, bundled dependencies, and shaders.
 
-### Displaying Compute Results as a Texture
+## GitHub Actions
 
-When a compute layer writes to a `wgpu::Texture`, pass it to a `TextureRenderLayer` and call `Draw` in `OnUpdate`:
+Two workflows are checked in under `.github/workflows/`:
 
-```cpp
-#include <wglib/render_layer/TextureRenderLayer.hpp>
+- **Build and Deploy Web (Emscripten)**: builds the demo with Emscripten and publishes the generated page to GitHub Pages on pushes to `main` or a manual dispatch.
+- **Build and Publish Library**: on a `v*` tag, builds native packages on Ubuntu, macOS, and Windows, runs the smoke test, uploads the package artifacts, and creates a GitHub Release. It can also be run manually for package artifacts.
 
-wglib::render_layers::TextureRenderLayer display{1280, 720};
+The Pages workflow initializes only the direct Dawn submodule. This keeps CI checkout reliable while Dawn's CMake dependency setup fetches the dependencies required by the web build.
 
-std::function<void()> loop;
-loop = [&]() {
-  engine.PushComputeLayer(handle, [&](wgpu::Texture tex) {
-    display.setTexture(std::move(tex));
-    loop();
-  });
-};
+## Project layout
 
-engine.OnUpdate([&](float) { engine.Draw(display); });
-loop();
-engine.Start();
+```text
+include/wglib/                  public headers installed for consumers
+src/wglib/                      compiled library implementation
+examples/desktop/main.cpp       bundled demo entry point
+shaders/                        WGSL shaders copied/packaged with the build
+dawn/                           pinned Dawn WebGPU submodule
+cmake/wglibConfig.cmake.in      installed-package configuration template
+tests/                           API smoke test and installed consumer
+.github/workflows/              Pages and release workflows
+CMakeLists.txt                  library, examples, tests, install, and CPack
 ```
 
----
+Build directories such as `build/`, `build_debug/`, `build_web/`, and `cmake-build-*` are intentionally ignored. Keep build output out of source control.
 
-## Render Layers
+## Troubleshooting
 
-The library provides four built-in render layer types:
+### `dawn` is missing during configuration
 
-- **RectangleRenderLayer**: Renders filled rectangles
-  - Constructor: `RectangleRenderLayer(glm::vec2 position, glm::vec2 size, glm::vec3 color)`
-  - Methods: `setPosition()`, `setSize()`, `setColor()`, `getPosition()`, `getSize()`, `getColor()`
+Initialize the direct submodule:
 
-- **CircleRenderLayer**: Renders filled circles
-  - Constructor: `CircleRenderLayer(glm::vec2 origin, float radius, glm::vec3 color, uint32_t resolution = 50)`
-  - Methods: `setOrigin()`, `setRadius()`, `setColor()`, `setResolution()`, `getOrigin()`, `getRadius()`, `getColor()`, `getResolution()`
-
-- **TextureRenderLayer**: Renders a GPU texture to the screen
-  - Constructor: `TextureRenderLayer(float width, float height)` or `TextureRenderLayer(wgpu::Texture texture, float width, float height)`
-  - Methods: `setTexture(wgpu::Texture)`, `getTexture()` (returns `std::optional<wgpu::Texture>`)
-  - Primary use case: displaying the output of a compute shader
-
-- **TriangleRenderLayer**: Renders a triangle from three vertices
-  - Constructor: `TriangleRenderLayer(std::array<Vertex, 3> vertices)`
-  - Methods: `setVertices()`, `setVertex<Index>()`, `getVertices()`
-
-### Creating Custom Render Layers
-
-Inherit from `RenderLayer` and implement:
-- `Render(wgpu::RenderPassEncoder&)` — encode draw calls
-- `InitRes(wgpu::Device&, wgpu::TextureFormat, wgpu::BindGroupLayout&)` — allocate GPU resources
-- `UpdateRes(wgpu::Device&)` — upload per-frame data (called each frame)
-
----
-
-## How It Works
-
-### Architecture
-
-wglib is built on several core components:
-
-1. **Engine** (`CoreEngine.hpp/cpp`): The main orchestrator that manages the update loop, rendering, and compute operations.
-   - Initializes the WebGPU device and adapter
-   - Creates the window through `WindowManager`
-   - Coordinates rendering via `Renderer`
-   - Manages compute operations through `ComputeEngine`
-   - Provides frame rate control with `SetTargetFPS(double fps)`
-
-2. **Renderer** (`CoreRenderer.hpp/cpp`): Manages the rendering pipeline.
-   - Builds and caches render pipelines per layer type
-   - Encodes render passes each frame
-   - Maintains uniform buffers for screen size
-   - Calls `Render()` on all layers queued via `engine.Draw()`
-
-3. **WindowManager**: Platform abstraction for window creation and surface sizing.
-   - GLFW on desktop
-   - Emscripten canvas on the web
-   - Handles surface creation, resize events, and aspect-ratio-preserving logical↔physical transforms
-
-4. **InputManager** (`CoreInput.hpp/cpp`): Mouse input utilities.
-   - Reads mouse button state (`get_cursor_down`, `get_cursor_up`)
-   - Converts cursor position into logical coordinates with HiDPI-aware scaling
-
-5. **ComputeEngine** (`ComputeEngine.hpp/cpp`): Manages GPU compute operations.
-   - Holds a queue of `ComputeTask` entries (layer + completion callback)
-   - Drains the queue at the start of each frame — each task creates a `CommandEncoder`, calls `layer->ComputeImpl()`, submits work, and registers an `OnSubmittedWorkDone` callback that calls `layer->getResult()` and forwards it to the user callback
-   - `InitComputeLayer<T>(args...)` constructs the layer and calls `InitImpl` once
-
-6. **ComputeLayer** (`ComputeLayer.hpp`): Abstract base for user-defined compute operations.
-   - Templated on result type `T`
-   - Exposes `ResultType` alias for type deduction
-   - The three virtual methods (`InitImpl`, `ComputeImpl`, `getResultImpl`) are the only API surface users need to implement
-
-7. **Render Layers**: Modular rendering units.
-   - Each layer owns its GPU resources
-   - Render pipeline instances are shared across layer instances of the same type
-
-### Update Cycle
-
-The engine runs a fixed-step update loop:
-
-```
-┌─────────────────────────────────┐
-│  ComputeEngine::Compute()       │
-│  Process all queued compute     │
-│  tasks; register GPU callbacks  │
-└──────────┬──────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────┐
-│  ProcessEvents()                │
-│  Deliver pending WebGPU         │
-│  callbacks (compute results)    │
-└──────────┬──────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────┐
-│  Renderer::Render()             │
-│  Draw all layers to the screen  │
-└──────────┬──────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────┐
-│  OnUpdate callback              │
-│  User application logic;        │
-│  call Draw() for next frame     │
-└──────────┬──────────────────────┘
-           │
-           └──> (repeat)
+```bash
+git submodule update --init dawn
 ```
 
-Each frame:
-1. Compute tasks are submitted to the GPU queue and callbacks are registered.
-2. `ProcessEvents` delivers any completed GPU callbacks, including compute results.
-3. Render layers queued via `engine.Draw()` are drawn to the screen.
-4. The user's `OnUpdate` callback runs with `deltaTime` in seconds.
+### The demo cannot find a shader
 
-Because `ProcessEvents` runs **before** rendering, compute results from the current frame are available to `OnUpdate` in the same frame when using the every-frame chaining pattern.
+Run the executable from a directory where the expected `shaders/` directory is available, or use the installed layout produced by `cmake --install`. The CMake demo copies the shader directory next to its executable.
 
-### WebGPU Integration
+### Emscripten configuration fails
 
-- Uses Dawn for native desktop rendering
-- Uses Emscripten's WebGPU implementation for web builds
-- Shaders are written in WGSL (WebGPU Shading Language) and located in `shaders/`
+Confirm that the SDK is activated and that both `emcmake` and Ninja are available:
 
----
-
-## Project Structure
-
-```
- wglib/
-├── include/wglib/                    # Installed public headers
-│   ├── CoreEngine.hpp                 # Main engine API
-│   ├── CoreRenderer.hpp               # Rendering system API
-│   ├── WindowManager.hpp              # Window + surface API
-│   ├── CoreInput.hpp                  # Mouse input API
-│   ├── render_layer/                  # Public render layer types
-│   └── compute/                       # Public compute layer types
-├── src/wglib/                         # Compiled implementation sources
-├── examples/desktop/main.cpp          # Native and WebAssembly demo entry point
-├── shaders/                           # WGSL shader files
-│   ├── default.wgsl                   # Default shader for shapes
-│   ├── texture.wgsl                   # Texture rendering shader
-│   ├── example.wgsl                   # Compute shader for ExampleLayer
-│   ├── ConwaysGameOfLife/
-│   │   └── compute.wgsl
-│   └── ParticleSimulation/
-│       └── particle.wgsl
-├── dawn/                              # Dawn WebGPU (submodule)
-├── cmake/                             # Installed-package configuration
-└── CMakeLists.txt                     # Library, examples, install, and CPack
+```bash
+emcc --version
+emcmake --version
+ninja --version
 ```
 
-## Future TODO
+### CMake generated files appear in `git status`
 
-- Event processing (keyboard)
-- Manual Engine Tick Mode to control when the update cycle runs
+Use an out-of-source build directory. The repository ignores the standard `build*` and `cmake-build-*` patterns, as well as `compile_commands.json`.
+
+## Roadmap
+
+- Keyboard event processing.
+- A manual engine-tick mode for applications that need to control frame advancement.

@@ -6,6 +6,7 @@
 #include "webgpu/webgpu_cpp.h"
 #include <array>
 #include <bit>
+#include <concepts>
 #include <iostream>
 #ifndef __EMSCRIPTEN__
 #include "webgpu/webgpu_cpp_print.h"
@@ -314,5 +315,27 @@ struct StagingBelt
         return std::nullopt;
     }
 };
+
+template <typename T, wgpu::BufferUsage BufferUsages>
+auto reallocBuffer(
+    const wgpu::Device &device, size_t newSize, wgpu::Buffer &oldBuffer, bool mapped = false,
+    std::invocable<wgpu::Buffer &, wgpu::Buffer &> auto bufferDestructor = [](wgpu::Buffer &oldBuffer,
+                                                                              wgpu::Buffer &newBuffer) {}) -> bool
+{
+    auto oldBufferSize = oldBuffer.GetSize();
+    auto oldBufferCount = oldBufferSize / sizeof(T);
+    if (newSize <= oldBufferCount)
+        return false;
+
+    // create the new buffer with the new size
+    auto newBuffer = util::createBuffer<T, BufferUsages>(device, newSize, mapped);
+
+    // run custom func
+    bufferDestructor(oldBuffer, newBuffer);
+
+    oldBuffer = newBuffer;
+
+    return true;
+}
 
 } // namespace wglib::util

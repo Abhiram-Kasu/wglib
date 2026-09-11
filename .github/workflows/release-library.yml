@@ -2,12 +2,17 @@ name: Build and Publish Library
 
 on:
   push:
+    branches: ["main"]
     tags:
       - "v*"
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: static-library-release-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   package:
@@ -22,7 +27,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
           fetch-depth: 1
 
       - name: Configure
@@ -30,6 +35,7 @@ jobs:
         run: >-
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
+          -DWGLIB_LIBRARY_TYPE=STATIC
           -DWGLIB_BUILD_EXAMPLES=OFF
           -DWGLIB_BUILD_TESTS=ON
           -DCMAKE_INSTALL_PREFIX=install
@@ -49,7 +55,7 @@ jobs:
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
-          name: wglib-${{ matrix.os }}
+          name: wglib-static-${{ matrix.os }}
           path: |
             build/packages/*.tar.gz
             build/packages/*.zip
@@ -58,7 +64,7 @@ jobs:
     name: Create GitHub Release
     needs: package
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: Download packages
@@ -67,7 +73,31 @@ jobs:
           path: packages
           merge-multiple: true
 
+      - name: Select release name
+        id: release_metadata
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "release_tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "release_title=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            nightly_id="${GITHUB_SHA:0:12}"
+            echo "release_tag=nightly-${nightly_id}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "release_title=Nightly ${nightly_id}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" packages/* --generate-notes
+          RELEASE_TAG: ${{ steps.release_metadata.outputs.release_tag }}
+          RELEASE_TITLE: ${{ steps.release_metadata.outputs.release_title }}
+          PRERELEASE: ${{ steps.release_metadata.outputs.prerelease }}
+        shell: bash
+        run: |
+          release_args=("$RELEASE_TAG" packages/* --target "$GITHUB_SHA" --title "$RELEASE_TITLE" --generate-notes)
+          if [[ "$PRERELEASE" == "true" ]]; then
+            release_args+=(--prerelease)
+          fi
+          gh release create "${release_args[@]}"

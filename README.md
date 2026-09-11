@@ -408,11 +408,12 @@ cmake --build build_consumer --parallel
 
 ## Packaging
 
-After installing/configuring a native build, create distributable TGZ and ZIP archives:
+After installing/configuring a native build, create distributable TGZ and ZIP archives. The release workflow uses the static setting shown below:
 
 ```bash
 cmake -S . -B build_package -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
+  -DWGLIB_LIBRARY_TYPE=STATIC \
   -DWGLIB_BUILD_EXAMPLES=OFF \
   -DWGLIB_BUILD_TESTS=ON
 cmake --build build_package --target wglib wglib_examples wglib_api_smoke --parallel
@@ -421,14 +422,14 @@ cmake --install build_package
 cpack --config build_package/CPackConfig.cmake
 ```
 
-Packages are written to `build_package/packages/` and contain the versioned wglib library, public headers, CMake package metadata, bundled dependencies, and shaders.
+Packages are written to `build_package/packages/` and contain the versioned static wglib library, public headers, CMake package metadata, Dawn/GLFW static dependencies, and shaders.
 
 ## GitHub Actions
 
 Two workflows are checked in under `.github/workflows/`:
 
 - **Build and Deploy Web (Emscripten)**: builds the demo with Emscripten and publishes the generated page to GitHub Pages on pushes to `main` or a manual dispatch.
-- **Build and Publish Library**: on a `v*` tag, builds native packages on Ubuntu, macOS, and Windows, runs the smoke test, uploads the package artifacts, and creates a GitHub Release. It can also be run manually for package artifacts.
+- **Build and Publish Library**: on every push to `main`, builds static native packages on Ubuntu, macOS, and Windows, runs the smoke test, uploads the package artifacts, and creates a uniquely named nightly prerelease. On a `v*` tag, it creates a stable GitHub Release instead. It can also be run manually from `main`.
 
 The Pages workflow initializes only the direct Dawn submodule. This keeps CI checkout reliable while Dawn's CMake dependency setup fetches the dependencies required by the web build.
 

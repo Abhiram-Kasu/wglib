@@ -94,6 +94,62 @@ else()
     set(WGLIB_EFFECTIVE_LIBRARY_TYPE ${WGLIB_LIBRARY_TYPE})
 endif()
 
+if(WGLIB_EFFECTIVE_LIBRARY_TYPE STREQUAL "STATIC" AND NOT EMSCRIPTEN)
+    set(WGLIB_INSTALL_STATIC_PACKAGE ON)
+
+    # Static consumers need the archives behind wglib's private build-time
+    # dependencies. Keep those dependencies out of the exported target graph
+    # and expose the installed archive paths instead; Dawn's internal targets
+    # contain source/build-tree paths that cannot be exported safely.
+    get_target_property(WGLIB_GLFW_LINK_LIBRARIES glfw LINK_LIBRARIES)
+    get_target_property(WGLIB_DAWN_GLFW_LINK_LIBRARIES dawn_glfw LINK_LIBRARIES)
+    get_target_property(WGLIB_DAWN_LINK_LIBRARIES webgpu_dawn LINK_LIBRARIES)
+    set(WGLIB_STATIC_SYSTEM_LINK_LIBRARIES ${WGLIB_GLFW_LINK_LIBRARIES})
+    foreach(WGLIB_DEPENDENCY IN LISTS
+        WGLIB_DAWN_LINK_LIBRARIES
+        WGLIB_DAWN_GLFW_LINK_LIBRARIES
+    )
+        if(NOT WGLIB_DEPENDENCY MATCHES "^dawn::" AND
+           NOT WGLIB_DEPENDENCY STREQUAL "glfw" AND
+           NOT WGLIB_DEPENDENCY STREQUAL "dawn_internal_config" AND
+           NOT WGLIB_DEPENDENCY STREQUAL "dawn_public_config" AND
+           NOT WGLIB_DEPENDENCY STREQUAL "dawn_common" AND
+           NOT WGLIB_DEPENDENCY STREQUAL "dawncpp_headers" AND
+           NOT WGLIB_DEPENDENCY STREQUAL "dawn_headers" AND
+           NOT WGLIB_DEPENDENCY STREQUAL "partition_alloc" AND
+           NOT WGLIB_DEPENDENCY STREQUAL "dawn_shared_utils")
+            list(APPEND WGLIB_STATIC_SYSTEM_LINK_LIBRARIES "${WGLIB_DEPENDENCY}")
+        endif()
+    endforeach()
+    list(REMOVE_DUPLICATES WGLIB_STATIC_SYSTEM_LINK_LIBRARIES)
+
+    if(WGLIB_STATIC_SYSTEM_LINK_LIBRARIES MATCHES "X11::")
+        set(WGLIB_STATIC_PACKAGE_REQUIRES_X11 ON)
+    else()
+        set(WGLIB_STATIC_PACKAGE_REQUIRES_X11 OFF)
+    endif()
+
+    foreach(WGLIB_DEPENDENCY_TARGET webgpu_dawn dawn_glfw glfw)
+        get_target_property(WGLIB_DEPENDENCY_OUTPUT_NAME
+            ${WGLIB_DEPENDENCY_TARGET} OUTPUT_NAME)
+        if(NOT WGLIB_DEPENDENCY_OUTPUT_NAME)
+            set(WGLIB_DEPENDENCY_OUTPUT_NAME ${WGLIB_DEPENDENCY_TARGET})
+        endif()
+        set(WGLIB_${WGLIB_DEPENDENCY_TARGET}_LIBRARY_NAME
+            "${CMAKE_STATIC_LIBRARY_PREFIX}${WGLIB_DEPENDENCY_OUTPUT_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    endforeach()
+
+    set(WGLIB_STATIC_INSTALL_LINK_LIBRARIES
+        "\$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${WGLIB_webgpu_dawn_LIBRARY_NAME}"
+        "\$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${WGLIB_dawn_glfw_LIBRARY_NAME}"
+        "\$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${WGLIB_glfw_LIBRARY_NAME}"
+        ${WGLIB_STATIC_SYSTEM_LINK_LIBRARIES}
+    )
+else()
+    set(WGLIB_INSTALL_STATIC_PACKAGE OFF)
+    set(WGLIB_STATIC_PACKAGE_REQUIRES_X11 OFF)
+endif()
+
 add_library(wglib ${WGLIB_EFFECTIVE_LIBRARY_TYPE} ${WGLIB_CORE_SOURCES})
 add_library(wglib::wglib ALIAS wglib)
 
@@ -120,6 +176,11 @@ target_include_directories(wglib
 
 if(EMSCRIPTEN)
     target_link_libraries(wglib PRIVATE emdawnwebgpu_cpp)
+elseif(WGLIB_EFFECTIVE_LIBRARY_TYPE STREQUAL "STATIC")
+    target_link_libraries(wglib PRIVATE
+        "$<BUILD_INTERFACE:dawn::webgpu_dawn;dawn::dawn_glfw;glfw>"
+        "$<INSTALL_INTERFACE:${WGLIB_STATIC_INSTALL_LINK_LIBRARIES}>"
+    )
 else()
     target_link_libraries(wglib PRIVATE dawn::webgpu_dawn dawn::dawn_glfw glfw)
 endif()
@@ -192,6 +253,15 @@ if(WGLIB_INSTALL)
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 
+    if(WGLIB_INSTALL_STATIC_PACKAGE)
+        install(FILES
+            $<TARGET_FILE:webgpu_dawn>
+            $<TARGET_FILE:dawn_glfw>
+            $<TARGET_FILE:glfw>
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+    endif()
+
     install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
     install(DIRECTORY shaders/ DESTINATION ${CMAKE_INSTALL_DATADIR}/wglib/shaders)
 
@@ -231,7 +301,11 @@ set(CPACK_PACKAGE_NAME "wglib")
 set(CPACK_PACKAGE_VENDOR "Abhiram Kasu")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A C++ WebGPU library for 2D graphics and compute applications")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-set(CPACK_PACKAGE_FILE_NAME "wglib-${PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+if(WGLIB_INSTALL_STATIC_PACKAGE)
+    set(CPACK_PACKAGE_FILE_NAME "wglib-${PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-static")
+else()
+    set(CPACK_PACKAGE_FILE_NAME "wglib-${PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+endif()
 set(CPACK_PACKAGE_DIRECTORY "${CMAKE_BINARY_DIR}/packages")
 set(CPACK_GENERATOR "TGZ;ZIP")
 include(CPack)

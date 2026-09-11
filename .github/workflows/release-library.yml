@@ -1,0 +1,73 @@
+name: Build and Publish Library
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Configure
+        shell: bash
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DWGLIB_BUILD_EXAMPLES=OFF
+          -DWGLIB_BUILD_TESTS=ON
+          -DCMAKE_INSTALL_PREFIX=install
+
+      - name: Build
+        run: cmake --build build --target wglib wglib_examples wglib_api_smoke --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Install
+        run: cmake --install build
+
+      - name: Package
+        run: cpack --config build/CPackConfig.cmake
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: wglib-${{ matrix.os }}
+          path: |
+            build/packages/*.tar.gz
+            build/packages/*.zip
+
+  release:
+    name: Create GitHub Release
+    needs: package
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          path: packages
+          merge-multiple: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" packages/* --generate-notes

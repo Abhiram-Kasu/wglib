@@ -1,5 +1,5 @@
 #include "glm/ext/vector_float2.hpp"
-#include "lib/compute/ComputeLayer.hpp"
+#include <wglib/compute/ComputeLayer.hpp>
 #include "webgpu/webgpu_cpp.h"
 #include <vector>
 namespace wglib::compute {

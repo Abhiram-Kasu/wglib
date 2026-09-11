@@ -15,20 +15,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo (no recursive submodules)
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          submodules: false
+          submodules: recursive
           fetch-depth: 1
-
-      - name: Initialize Dawn submodule only
-        run: |
-          git submodule update --init dawn
-
-      - name: Pull latest Dawn manually
-        run: |
-          cd dawn
-          git pull origin main
 
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14
@@ -42,8 +33,8 @@ jobs:
         run: |
           mkdir build_web
           cd build_web
-          emcmake cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
-          ninja
+          emcmake cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DWGLIB_BUILD_EXAMPLES=ON -DWGLIB_INSTALL=OFF
+          ninja wglib_demo
 
           # Ensure entry point is index.html for GitHub Pages
           if ls *.html 1> /dev/null 2>&1; then

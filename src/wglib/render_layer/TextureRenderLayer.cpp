@@ -1,5 +1,5 @@
 #include "TextureRenderLayer.hpp"
-#include "lib/CoreUtil.hpp"
+#include <wglib/CoreUtil.hpp>
 #include <vector>
 
 namespace wglib::render_layers {
@@ -51,7 +51,7 @@ void TextureRenderLayer::InitRes(const wgpu::Device &device,
 
   // Shader
   const auto shaderModule =
-      util::createShaderModuleFromFile("../src/shaders/texture.wgsl", device);
+      util::createShaderModuleFromFile(util::shaderPath("texture.wgsl"), device);
 
   // Bind group layout
   const wgpu::BindGroupLayoutEntry bglEntries[] = {

@@ -4,7 +4,7 @@
 
 #include "CircleRenderLayer.hpp"
 #include "glm/ext/scalar_constants.hpp"
-#include "lib/CoreUtil.hpp"
+#include <wglib/CoreUtil.hpp>
 #include "webgpu/webgpu_cpp.h"
 #include <cassert>
 #include <print>
@@ -37,7 +37,7 @@ auto CircleRenderLayer::initRenderPipeline(
     const wgpu::BindGroupLayout &bindGroupLayout) -> void {
   if (m_render_pipeline.has_value())
     return;
-  const auto shaderCode = wglib::util::readFile("../src/shaders/default.wgsl");
+  const auto shaderCode = wglib::util::readFile(wglib::util::shaderPath("default.wgsl"));
   wgpu::ShaderSourceWGSL wgsl{{.code = shaderCode.c_str()}};
   wgpu::ShaderModuleDescriptor shaderModuleDescriptor{.nextInChain = &wgsl};
   wgpu::ShaderModule shaderModule =

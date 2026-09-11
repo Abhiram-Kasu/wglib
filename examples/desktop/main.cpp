@@ -8,24 +8,24 @@
 #include <vector>
 
 #include "GLFW/glfw3.h"
-#include "lib/CoreEngine.hpp"
-#include "lib/CoreInput.hpp"
-#include "lib/CoreRenderer.hpp"
-#include "lib/render_layer/RenderLayer.hpp"
+#include <wglib/CoreEngine.hpp>
+#include <wglib/CoreInput.hpp>
+#include <wglib/CoreRenderer.hpp>
+#include <wglib/render_layer/RenderLayer.hpp>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #endif
 
-#include "lib/CoreUtil.hpp"
+#include <wglib/CoreUtil.hpp>
 
-#include "lib/compute/ExampleLayers/ConwaysGameOfLife.hpp"
-#include "lib/compute/ExampleLayers/ExampleLayer.hpp"
-#include "lib/compute/ExampleLayers/ParticleSimulation.hpp"
-#include "lib/render_layer/CircleRenderLayer.hpp"
-#include "lib/render_layer/RectangleRenderLayer.hpp"
-#include "lib/render_layer/TextureRenderLayer.hpp"
-#include "lib/render_layer/TriangleRenderLayer.hpp"
+#include <wglib/compute/ExampleLayers/ConwaysGameOfLife.hpp>
+#include <wglib/compute/ExampleLayers/ExampleLayer.hpp>
+#include <wglib/compute/ExampleLayers/ParticleSimulation.hpp>
+#include <wglib/render_layer/CircleRenderLayer.hpp>
+#include <wglib/render_layer/RectangleRenderLayer.hpp>
+#include <wglib/render_layer/TextureRenderLayer.hpp>
+#include <wglib/render_layer/TriangleRenderLayer.hpp>
 #include "webgpu/webgpu_cpp.h"
 
 static auto engine_window_size = glm::u32vec2{};

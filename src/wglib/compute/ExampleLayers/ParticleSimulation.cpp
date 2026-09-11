@@ -1,8 +1,8 @@
 #include "ParticleSimulation.hpp"
 #include "glm/ext/vector_float2.hpp"
-#include "lib/CoreEngine.hpp"
-#include "lib/CoreInput.hpp"
-#include "lib/CoreUtil.hpp"
+#include <wglib/CoreEngine.hpp>
+#include <wglib/CoreInput.hpp>
+#include <wglib/CoreUtil.hpp>
 #include "webgpu/webgpu_cpp.h"
 #include <algorithm>
 #include <atomic>
@@ -100,7 +100,8 @@ auto ParticleSimulationLayer::InitImpl(wgpu::Device &device) -> void
 
     const wgpu::ComputePipelineDescriptor desc{
         .compute = {.module =
-                        util::createShaderModuleFromFile("../src/shaders/ParticleSimulation/particle.wgsl", device)}};
+                        util::createShaderModuleFromFile(
+                            util::shaderPath("ParticleSimulation/particle.wgsl"), device)}};
     m_computePipeline = device.CreateComputePipeline(&desc);
     createAndSetBindGroups(device);
 

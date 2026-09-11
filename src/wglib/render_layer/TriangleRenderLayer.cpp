@@ -1,6 +1,6 @@
 #include "TriangleRenderLayer.hpp"
-#include "lib/CoreUtil.hpp"
-#include "lib/render_layer/Vertex.hpp"
+#include <wglib/CoreUtil.hpp>
+#include <wglib/render_layer/Vertex.hpp>
 #include "webgpu/webgpu_cpp.h"
 
 namespace wglib::render_layers
@@ -19,7 +19,7 @@ auto TriangleRenderLayer::InitRes(const wgpu::Device &device, wgpu::TextureForma
     // TODO remove
     util::log("Created Buffer and wrote to it");
 
-    auto shader_module = util::createShaderModuleFromFile("../src/shaders/default.wgsl", device);
+    auto shader_module = util::createShaderModuleFromFile(util::shaderPath("default.wgsl"), device);
     auto vertex_buffer_layout = Vertex::getVertexBufferLayout();
     auto colorTargetState = wgpu::ColorTargetState{.format = format};
 

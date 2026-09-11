@@ -2,9 +2,9 @@
 #include "glm/vec2.hpp"
 #include <span>
 #include "glm/vec4.hpp"
-#include "lib/CoreInput.hpp"
-#include "lib/CoreUtil.hpp"
-#include "lib/compute/ComputeLayer.hpp"
+#include <wglib/CoreInput.hpp>
+#include <wglib/CoreUtil.hpp>
+#include <wglib/compute/ComputeLayer.hpp>
 #include "webgpu/webgpu_cpp.h"
 #include <atomic>
 namespace wglib::compute {

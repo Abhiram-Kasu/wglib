@@ -1,7 +1,7 @@
 
 #pragma once
-#include "lib/render_layer/RenderLayer.hpp"
-#include "lib/render_layer/Vertex.hpp"
+#include <wglib/render_layer/RenderLayer.hpp>
+#include <wglib/render_layer/Vertex.hpp>
 #include "webgpu/webgpu_cpp.h"
 namespace wglib::render_layers
 {

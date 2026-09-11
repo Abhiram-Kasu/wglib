@@ -32,46 +32,67 @@ A modern C++23 library for creating 2D graphics and compute applications using W
 ### Getting the Code
 
 ```bash
-# Clone the repository with submodules
-git clone https://github.com/Abhiram-Kasu/wglib.git
+# Clone the repository with all submodules
+git clone --recurse-submodules https://github.com/Abhiram-Kasu/wglib.git
 cd wglib
-git submodule update --init
 ```
 
 ### Desktop Build
 
 ```bash
-# Create build directory
-mkdir build && cd build
+# Create an out-of-source build directory
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
-# Configure and build
-cmake ..
-cmake --build .
+# Build the reusable library and desktop example
+cmake --build build --target wglib_demo
 
 # Run the example
-./wglib
+./build/wglib_demo
 ```
 
 ### Web Build
 
 ```bash
 mkdir build_web && cd build_web
-emcmake cmake ..
-cmake --build .
+emcmake cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build . --target wglib_demo
 
 # Serve the result (use any web server)
 python3 -m http.server 8000
-# Open http://localhost:8000/wglib.html in your browser
+# Open http://localhost:8000/wglib_demo.html in your browser
 ```
+
+### Install the library
+
+```bash
+cmake -S . -B build -G Ninja -DWGLIB_BUILD_EXAMPLES=OFF \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD/install"
+cmake --build build --target wglib wglib_examples
+cmake --install build
+```
+
+An installed consumer can use the exported target:
+
+```cmake
+find_package(wglib CONFIG REQUIRED)
+
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE wglib::wglib)
+```
+
+For source-based development, use `FetchContent` with a tagged revision and
+recursive submodules. The native library is shared by default so Dawn and
+GLFW remain implementation details of the installed package; set
+`-DWGLIB_LIBRARY_TYPE=STATIC` when building a static source tree.
 
 ## How to Use
 
 ### Basic Setup
 
 ```cpp
-#include "lib/CoreEngine.hpp"
-#include "lib/render_layer/CircleRenderLayer.hpp"
-#include "lib/render_layer/RectangleRenderLayer.hpp"
+#include <wglib/CoreEngine.hpp>
+#include <wglib/render_layer/CircleRenderLayer.hpp>
+#include <wglib/render_layer/RectangleRenderLayer.hpp>
 
 int main() {
   // Create engine with window size and title
@@ -173,10 +194,10 @@ This example uses the built-in `ExampleLayer<N>`, which multiplies an array of N
 - Returns a `std::span` over the mapped staging buffer once the data is ready.
 
 ```cpp
-#include "lib/CoreEngine.hpp"
-#include "lib/compute/ExampleLayers/ExampleLayer.hpp"
-#include "lib/render_layer/RectangleRenderLayer.hpp"
-#include "lib/render_layer/CircleRenderLayer.hpp"
+#include <wglib/CoreEngine.hpp>
+#include <wglib/compute/ExampleLayers/ExampleLayer.hpp>
+#include <wglib/render_layer/RectangleRenderLayer.hpp>
+#include <wglib/render_layer/CircleRenderLayer.hpp>
 #include <numbers>
 #include <ranges>
 
@@ -228,9 +249,9 @@ This example runs a cellular automaton on the GPU and outputs the result as a `w
 **Result type**: `const wgpu::Texture &`
 
 ```cpp
-#include "lib/CoreEngine.hpp"
-#include "lib/compute/ExampleLayers/ConwaysGameOfLife.hpp"
-#include "lib/render_layer/TextureRenderLayer.hpp"
+#include <wglib/CoreEngine.hpp>
+#include <wglib/compute/ExampleLayers/ConwaysGameOfLife.hpp>
+#include <wglib/render_layer/TextureRenderLayer.hpp>
 
 int main() {
   wglib::Engine engine({2560, 1440}, "Conway's Game of Life");
@@ -276,9 +297,9 @@ This example simulates thousands of particles with gravity and repulsion forces,
 **Result type**: `std::optional<wgpu::Texture>`
 
 ```cpp
-#include "lib/CoreEngine.hpp"
-#include "lib/compute/ExampleLayers/ParticleSimulation.hpp"
-#include "lib/render_layer/TextureRenderLayer.hpp"
+#include <wglib/CoreEngine.hpp>
+#include <wglib/compute/ExampleLayers/ParticleSimulation.hpp>
+#include <wglib/render_layer/TextureRenderLayer.hpp>
 
 int main() {
   wglib::Engine engine({2560, 1440}, "Particle Simulation");
@@ -323,8 +344,8 @@ To implement your own compute layer, subclass `ComputeLayer<T>` and implement th
 #### Step 1 — Define the class
 
 ```cpp
-#include "lib/compute/ComputeLayer.hpp"
-#include "lib/CoreUtil.hpp"
+#include <wglib/compute/ComputeLayer.hpp>
+#include <wglib/CoreUtil.hpp>
 
 // T is the type your callback will receive.
 // Use std::optional<T> if the result may not be available immediately.
@@ -352,7 +373,7 @@ protected:
         device, m_inputData.size());
 
     auto shaderModule = wglib::util::createShaderModuleFromFile(
-        "../src/shaders/my_shader.wgsl", device);
+        "shaders/my_shader.wgsl", device);
     wgpu::ComputePipelineDescriptor desc{.compute = {.module = shaderModule}};
     m_pipeline = device.CreateComputePipeline(&desc);
 
@@ -416,7 +437,7 @@ public:
 #### Step 2 — Write the WGSL compute shader
 
 ```wgsl
-// src/shaders/my_shader.wgsl
+// shaders/my_shader.wgsl
 
 @group(0) @binding(0) var<storage, read>       input  : array<f32>;
 @group(0) @binding(1) var<storage, read_write> output : array<f32>;
@@ -481,7 +502,7 @@ engine.Start();
 When a compute layer writes to a `wgpu::Texture`, pass it to a `TextureRenderLayer` and call `Draw` in `OnUpdate`:
 
 ```cpp
-#include "lib/render_layer/TextureRenderLayer.hpp"
+#include <wglib/render_layer/TextureRenderLayer.hpp>
 
 wglib::render_layers::TextureRenderLayer display{1280, 720};
 
@@ -618,46 +639,34 @@ Because `ProcessEvents` runs **before** rendering, compute results from the curr
 
 - Uses Dawn for native desktop rendering
 - Uses Emscripten's WebGPU implementation for web builds
-- Shaders are written in WGSL (WebGPU Shading Language) and located in `src/shaders/`
+- Shaders are written in WGSL (WebGPU Shading Language) and located in `shaders/`
 
 ---
 
 ## Project Structure
 
 ```
-wglib/
-├── src/
-│   ├── main.cpp                      # Example application (multiple demos)
-│   ├── lib/
-│   │   ├── CoreEngine.hpp/cpp        # Main engine
-│   │   ├── CoreRenderer.hpp/cpp      # Rendering system
-│   │   ├── CoreUtil.hpp              # Utility functions (logging, buffer helpers)
-│   │   ├── WindowManager.*           # Window + surface management (GLFW / Emscripten)
-│   │   ├── CoreInput.*               # Mouse input helpers (logical coordinates)
-│   │   ├── render_layer/             # Render layer implementations
-│   │   │   ├── RenderLayer.hpp       # Abstract base class
-│   │   │   ├── RectangleRenderLayer.*
-│   │   │   ├── CircleRenderLayer.*
-│   │   │   ├── TriangleRenderLayer.*
-│   │   │   ├── TextureRenderLayer.*
-│   │   │   └── Vertex.hpp
-│   │   └── compute/                  # Compute system
-│   │       ├── ComputeEngine.*       # Task queue and execution
-│   │       ├── ComputeLayer.hpp      # Templated abstract base
-│   │       └── ExampleLayers/        # Built-in example compute layers
-│   │           ├── ExampleLayer.hpp          # Array multiplication + CPU readback
-│   │           ├── ConwaysGameOfLife.*        # Game of Life simulation
-│   │           └── ParticleSimulation.*       # Physics particle system
-│   └── shaders/                      # WGSL shader files
-│       ├── default.wgsl              # Default shader for shapes
-│       ├── texture.wgsl              # Texture rendering shader
-│       ├── example.wgsl              # Compute shader for ExampleLayer
-│       ├── ConwaysGameOfLife/
-│       │   └── compute.wgsl
-│       └── ParticleSimulation/
-│           └── particle.wgsl
-├── dawn/                             # Dawn WebGPU (submodule)
-└── CMakeLists.txt                    # Build configuration
+ wglib/
+├── include/wglib/                    # Installed public headers
+│   ├── CoreEngine.hpp                 # Main engine API
+│   ├── CoreRenderer.hpp               # Rendering system API
+│   ├── WindowManager.hpp              # Window + surface API
+│   ├── CoreInput.hpp                  # Mouse input API
+│   ├── render_layer/                  # Public render layer types
+│   └── compute/                       # Public compute layer types
+├── src/wglib/                         # Compiled implementation sources
+├── examples/desktop/main.cpp          # Native and WebAssembly demo entry point
+├── shaders/                           # WGSL shader files
+│   ├── default.wgsl                   # Default shader for shapes
+│   ├── texture.wgsl                   # Texture rendering shader
+│   ├── example.wgsl                   # Compute shader for ExampleLayer
+│   ├── ConwaysGameOfLife/
+│   │   └── compute.wgsl
+│   └── ParticleSimulation/
+│       └── particle.wgsl
+├── dawn/                              # Dawn WebGPU (submodule)
+├── cmake/                             # Installed-package configuration
+└── CMakeLists.txt                     # Library, examples, install, and CPack
 ```
 
 ## Future TODO

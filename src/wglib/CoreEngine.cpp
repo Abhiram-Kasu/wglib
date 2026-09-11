@@ -1,8 +1,8 @@
 #include "CoreEngine.hpp"
 #include "CoreUtil.hpp"
 #include "GLFW/glfw3.h"
-#include "lib/CoreInput.hpp"
-#include "lib/compute/ComputeEngine.hpp"
+#include <wglib/CoreInput.hpp>
+#include <wglib/compute/ComputeEngine.hpp>
 
 #include <memory>
 #ifndef __EMSCRIPTEN__

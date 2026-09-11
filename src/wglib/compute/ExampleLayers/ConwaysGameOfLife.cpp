@@ -1,5 +1,5 @@
 #include "ConwaysGameOfLife.hpp"
-#include "lib/CoreUtil.hpp"
+#include <wglib/CoreUtil.hpp>
 #include "webgpu/webgpu_cpp.h"
 #include <cstddef>
 #include <cstdlib>
@@ -67,7 +67,7 @@ auto ConwaysGameOfLifeComputeLayer::InitImpl(wgpu::Device &device) -> void {
     wgpu::ComputePipelineDescriptor desc{
         .compute = {
             .module = util::createShaderModuleFromFile(
-                "../src/shaders/ConwaysGameOfLife/compute.wgsl", device)}};
+                util::shaderPath("ConwaysGameOfLife/compute.wgsl"), device)}};
     m_computePipeline = device.CreateComputePipeline(&desc);
     m_init = true;
   }

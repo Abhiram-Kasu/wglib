@@ -1,5 +1,9 @@
 build/
 build_web/
+build_*/
+dist/
+install/
+.DS_Store
 cmake-build-debug/
 .idea/
 .cache/

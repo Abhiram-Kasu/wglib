@@ -1,6 +1,6 @@
 #pragma once
-#include "lib/CoreUtil.hpp"
-#include "lib/compute/ComputeLayer.hpp"
+#include <wglib/CoreUtil.hpp>
+#include <wglib/compute/ComputeLayer.hpp>
 #include "webgpu/webgpu_cpp.h"
 #include <atomic>
 #include <ranges>
@@ -81,7 +81,7 @@ auto ExampleLayer<numItems>::initBuffers(wgpu::Device &device) -> void {
 template <size_t numItems>
 auto ExampleLayer<numItems>::initComputePipeline(wgpu::Device &device) -> void {
   const auto shaderModule =
-      util::createShaderModuleFromFile("../src/shaders/example.wgsl", device);
+      util::createShaderModuleFromFile(util::shaderPath("example.wgsl"), device);
   const wgpu::ComputePipelineDescriptor desc{
       .compute = {.module = shaderModule}};
   m_computePipeline = device.CreateComputePipeline(&desc);

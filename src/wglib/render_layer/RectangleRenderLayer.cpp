@@ -7,7 +7,7 @@
 #include <print>
 
 #include "Vertex.hpp"
-#include "lib/CoreUtil.hpp"
+#include <wglib/CoreUtil.hpp>
 
 namespace wglib::render_layers {
 std::optional<wgpu::RenderPipeline> RectangleRenderLayer::m_render_pipeline{
@@ -65,7 +65,7 @@ auto RectangleRenderLayer::initRenderPipeline(
     const wgpu::Device &device, wgpu::TextureFormat format,
     const wgpu::BindGroupLayout &bindGroupLayout) -> void {
   // Create render pipeline
-  const auto shaderCode = util::readFile("../src/shaders/default.wgsl");
+  const auto shaderCode = util::readFile(util::shaderPath("default.wgsl"));
   wgpu::ShaderSourceWGSL wgsl{{.code = shaderCode.c_str()}};
   wgpu::ShaderModuleDescriptor shaderModuleDescriptor{.nextInChain = &wgsl};
   wgpu::ShaderModule shaderModule =

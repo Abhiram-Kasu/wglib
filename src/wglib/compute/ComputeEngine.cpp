@@ -1,5 +1,5 @@
 #include "ComputeEngine.hpp"
-#include "lib/CoreUtil.hpp"
+#include <wglib/CoreUtil.hpp>
 #include "webgpu/webgpu_cpp.h"
 
 namespace wglib::compute {

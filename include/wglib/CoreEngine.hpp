@@ -3,8 +3,8 @@
 #include "GLFW/glfw3.h"
 #include "WindowManager.hpp"
 #include "compute/ComputeEngine.hpp"
-#include "lib/compute/ComputeLayer.hpp"
-#include "lib/render_layer/RenderLayer.hpp"
+#include <wglib/compute/ComputeLayer.hpp>
+#include <wglib/render_layer/RenderLayer.hpp>
 #include <concepts>
 #include <cstddef>
 #include <memory>

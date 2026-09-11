@@ -12,6 +12,7 @@
 #include "webgpu/webgpu_cpp_print.h"
 #endif
 #include <cstdlib> // for std::exit
+#include <filesystem>
 #include <fstream> // for std::ifstream, std::ios::binary
 #include <memory>
 #include <mutex>
@@ -74,6 +75,15 @@ template <typename T> inline auto divCeil(T dividend, T divisor) -> T
     return (dividend + divisor - 1) / divisor;
 }
 
+inline auto shaderPath(std::string_view relative_path) -> std::string
+{
+#ifdef __EMSCRIPTEN__
+    return "/src/shaders/" + std::string(relative_path);
+#else
+    return (std::filesystem::path{"shaders"} / relative_path).string();
+#endif
+}
+
 inline auto readFile(std::string_view path) -> std::string
 {
 #ifdef __EMSCRIPTEN__
@@ -87,6 +97,12 @@ inline auto readFile(std::string_view path) -> std::string
     std::ifstream f(adjusted_path, std::ios::binary);
 #else
     std::ifstream f(path.data(), std::ios::binary);
+    if (!f && !std::filesystem::path{path}.is_absolute())
+    {
+        f.clear();
+        const auto installed_path = std::filesystem::current_path() / ".." / "share" / "wglib" / path;
+        f.open(installed_path, std::ios::binary);
+    }
 #endif
     if (!f)
     {

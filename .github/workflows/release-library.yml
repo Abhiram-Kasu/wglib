@@ -46,10 +46,15 @@ jobs:
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            cmake -S . -B build -G "Visual Studio 17 2022" -A x64 \
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
               -DWGLIB_LIBRARY_TYPE=STATIC \
               -DWGLIB_BUILD_EXAMPLES=OFF \
               -DWGLIB_BUILD_TESTS=ON \
+              -DAWN_ENABLE_D3D11=OFF \
+              -DAWN_ENABLE_D3D12=OFF \
+              -DAWN_ENABLE_VULKAN=OFF \
+              -DAWN_ENABLE_OPENGL=ON \
               -DCMAKE_INSTALL_PREFIX=install
           else
             cmake -S . -B build -G Ninja \

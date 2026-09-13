@@ -30,6 +30,17 @@ jobs:
           submodules: true
           fetch-depth: 1
 
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libx11-dev
+
       - name: Configure
         shell: bash
         run: >-

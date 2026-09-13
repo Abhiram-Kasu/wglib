@@ -19,6 +19,10 @@ else()
 endif()
 option(WGLIB_INSTALL "Enable installation and CMake package export" ${WGLIB_INSTALL_DEFAULT})
 option(WGLIB_FETCH_DEPENDENCIES "Fetch GLM and Dawn dependencies" ON)
+option(WGLIB_PORTABLE_WINDOWS
+    "Use the MinGW-compatible OpenGL backend instead of Windows D3D/Vulkan backends"
+    OFF
+)
 set(WGLIB_LIBRARY_TYPE "SHARED" CACHE STRING "Library type for native builds (STATIC or SHARED)")
 set_property(CACHE WGLIB_LIBRARY_TYPE PROPERTY STRINGS STATIC SHARED)
 
@@ -71,6 +75,15 @@ if(EMSCRIPTEN)
     set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
     set(DAWN_BUILD_NODE_BINDINGS OFF CACHE BOOL "" FORCE)
     set(TINT_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+endif()
+
+if(WIN32 AND WGLIB_PORTABLE_WINDOWS)
+    set(DAWN_ENABLE_D3D11 OFF CACHE BOOL "" FORCE)
+    set(DAWN_ENABLE_D3D12 OFF CACHE BOOL "" FORCE)
+    set(DAWN_ENABLE_VULKAN OFF CACHE BOOL "" FORCE)
+    set(DAWN_ENABLE_DESKTOP_GL ON CACHE BOOL "" FORCE)
+    set(DAWN_ENABLE_OPENGLES OFF CACHE BOOL "" FORCE)
+    set(DAWN_ENABLE_SPIRV_VALIDATION OFF CACHE BOOL "" FORCE)
 endif()
 
 add_subdirectory(dawn)

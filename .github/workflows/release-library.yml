@@ -40,6 +40,7 @@ jobs:
             libxinerama-dev \
             libxrandr-dev \
             libx11-dev \
+            libx11-xcb-dev \
             libgl1-mesa-dev
 
       - name: Configure

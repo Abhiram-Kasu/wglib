@@ -44,25 +44,33 @@ jobs:
 
       - name: Configure
         shell: bash
-        run: >-
-          cmake -S . -B build -G Ninja
-          -DCMAKE_BUILD_TYPE=Release
-          -DWGLIB_LIBRARY_TYPE=STATIC
-          -DWGLIB_BUILD_EXAMPLES=OFF
-          -DWGLIB_BUILD_TESTS=ON
-          -DCMAKE_INSTALL_PREFIX=install
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            cmake -S . -B build -G "Visual Studio 17 2022" -A x64 \
+              -DWGLIB_LIBRARY_TYPE=STATIC \
+              -DWGLIB_BUILD_EXAMPLES=OFF \
+              -DWGLIB_BUILD_TESTS=ON \
+              -DCMAKE_INSTALL_PREFIX=install
+          else
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DWGLIB_LIBRARY_TYPE=STATIC \
+              -DWGLIB_BUILD_EXAMPLES=OFF \
+              -DWGLIB_BUILD_TESTS=ON \
+              -DCMAKE_INSTALL_PREFIX=install
+          fi
 
       - name: Build
-        run: cmake --build build --target wglib wglib_examples wglib_api_smoke --parallel
+        run: cmake --build build --config Release --target wglib wglib_examples wglib_api_smoke --parallel
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
       - name: Install
-        run: cmake --install build
+        run: cmake --install build --config Release
 
       - name: Package
-        run: cpack --config build/CPackConfig.cmake
+        run: cpack --config build/CPackConfig.cmake -C Release
 
       - name: Upload package
         uses: actions/upload-artifact@v4

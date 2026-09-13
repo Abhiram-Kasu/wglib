@@ -39,7 +39,8 @@ jobs:
             libxi-dev \
             libxinerama-dev \
             libxrandr-dev \
-            libx11-dev
+            libx11-dev \
+            libgl1-mesa-dev
 
       - name: Configure
         shell: bash

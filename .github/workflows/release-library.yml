@@ -137,4 +137,4 @@ jobs:
           if [[ "$PRERELEASE" == "true" ]]; then
             release_args+=(--prerelease)
           fi
-          gh release create "${release_args[@]}"
+          gh release create "${release_args[@]}" --repo "$GITHUB_REPOSITORY"

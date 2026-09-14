@@ -17,49 +17,58 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <print>
-#include <print> // if you use std::println
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <type_traits>
 #include <utility>
 
-namespace std
-{
-#ifndef __EMSCRIPTEN__
-template <typename T>
-    requires std::is_enum_v<T> && requires(std::ostream &os, const T &value) {
-        { os << value } -> std::convertible_to<std::ostream &>;
-    }
-struct formatter<T> : formatter<string>
-{
-    auto format(const T &value, format_context &ctx) const
-    {
-        std::stringstream oss;
-        oss << value;
-        return formatter<string>::format(oss.str(), ctx);
-    }
-};
-#else
-// Formatter for wgpu enums without operator<< support since emcc headers dont
-// have webgpu_cpp_print.h
-template <typename T>
-    requires std::is_enum_v<T>
-struct formatter<T> : formatter<std::underlying_type_t<T>>
-{
-    auto format(const T &value, format_context &ctx) const
-    {
-        return formatter<std::underlying_type_t<T>>::format(static_cast<std::underlying_type_t<T>>(value), ctx);
-    }
-};
-#endif
-} // namespace std
 namespace wglib::util
 {
-template <typename... Args> void log(std::format_string<Args...> fmt, Args &&...args)
+template <typename T> void appendLogValue(std::ostringstream &stream, T &&value)
 {
-    std::println(fmt, std::forward<Args>(args)...);
+    using Value = std::remove_cvref_t<T>;
+    if constexpr (std::is_enum_v<Value> && requires(std::ostream &output, Value enumValue) {
+                      output << enumValue;
+                  })
+    {
+        stream << value;
+    }
+    else if constexpr (std::is_enum_v<Value>)
+    {
+        stream << static_cast<std::underlying_type_t<Value>>(value);
+    }
+    else
+    {
+        stream << std::forward<T>(value);
+    }
+}
+
+inline void appendLogFormat(std::ostringstream &stream, std::string_view fmt)
+{
+    stream << fmt;
+}
+
+template <typename T, typename... Args>
+void appendLogFormat(std::ostringstream &stream, std::string_view fmt, T &&value, Args &&...args)
+{
+    const auto placeholder = fmt.find("{}");
+    if (placeholder == std::string_view::npos)
+    {
+        stream << fmt;
+        return;
+    }
+
+    stream << fmt.substr(0, placeholder);
+    appendLogValue(stream, std::forward<T>(value));
+    appendLogFormat(stream, fmt.substr(placeholder + 2), std::forward<Args>(args)...);
+}
+
+template <typename... Args> void log(std::string_view fmt, Args &&...args)
+{
+    std::ostringstream message;
+    appendLogFormat(message, fmt, std::forward<Args>(args)...);
+    std::cout << message.str() << '\n';
 }
 
 inline void log(std::string_view msg)

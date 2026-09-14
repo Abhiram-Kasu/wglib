@@ -4,8 +4,6 @@
 
 #include "RectangleRenderLayer.hpp"
 
-#include <print>
-
 #include "Vertex.hpp"
 #include <wglib/CoreUtil.hpp>
 

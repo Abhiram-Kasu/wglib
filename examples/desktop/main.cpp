@@ -1,4 +1,5 @@
 #include <numbers>
+#include <print>
 #include <ranges>
 #include <set>
 #include <span>
@@ -236,7 +237,7 @@ int main(int argc, char **argv)
             runSimpleTriangleExample();
             break;
         case 4:
-            wglib::util::log("Staring interaction test");
+            std::println("Staring interaction test");
             interactionTest();
             break;
         default:

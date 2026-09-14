@@ -7,6 +7,7 @@
 #include <wglib/CoreUtil.hpp>
 #include "webgpu/webgpu_cpp.h"
 #include <cassert>
+#include <print>
 #include <ranges>
 
 namespace wglib::render_layers {

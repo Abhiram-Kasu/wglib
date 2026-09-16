@@ -4,7 +4,8 @@
 
 #include "RenderLayer.hpp"
 
-namespace wglib::render_layers {
+namespace wglib::render_layers
+{
 
 RenderLayer::~RenderLayer() = default;
 }

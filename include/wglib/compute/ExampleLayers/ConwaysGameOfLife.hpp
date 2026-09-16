@@ -1,37 +1,39 @@
 #include "glm/ext/vector_float2.hpp"
-#include <wglib/compute/ComputeLayer.hpp>
 #include "webgpu/webgpu_cpp.h"
 #include <vector>
-namespace wglib::compute {
+#include <wglib/compute/ComputeLayer.hpp>
+namespace wglib::compute
+{
 
-class ConwaysGameOfLifeComputeLayer
-    : public ComputeLayer<const wgpu::Texture &> {
+class ConwaysGameOfLifeComputeLayer : public ComputeLayer<const wgpu::Texture &>
+{
 
-  struct alignas(16) Uniform {
-    uint32_t width, height;
-  };
+    struct alignas(16) Uniform
+    {
+        uint32_t width, height;
+    };
 
-private:
-  glm::vec2 m_size;
-  wgpu::Buffer m_firstBuffer, m_secondBuffer, m_uniformBuffer;
-  wgpu::Texture m_texture;
-  wgpu::TextureView m_textureView;
-  wgpu::Buffer *m_currBufferPointer, *m_secBufferPointer;
-  wgpu::BindGroup m_bindGroups[2];
-  uint8_t m_bindGroupIndex{0};
+  private:
+    glm::vec2 m_size;
+    wgpu::Buffer m_firstBuffer, m_secondBuffer, m_uniformBuffer;
+    wgpu::Texture m_texture;
+    wgpu::TextureView m_textureView;
+    wgpu::Buffer *m_currBufferPointer, *m_secBufferPointer;
+    wgpu::BindGroup m_bindGroups[2];
+    uint8_t m_bindGroupIndex{0};
 
-  bool m_init{false};
-  std::vector<uint32_t> m_initalData;
-  wgpu::ComputePipeline m_computePipeline;
+    bool m_init{false};
+    std::vector<uint32_t> m_initalData;
+    wgpu::ComputePipeline m_computePipeline;
 
-public:
-  auto Swap() -> void;
-  ConwaysGameOfLifeComputeLayer(glm::vec2);
+  public:
+    auto Swap() -> void;
+    ConwaysGameOfLifeComputeLayer(glm::vec2);
 
-protected:
-  auto getResultImpl() -> const wgpu::Texture & override;
-  auto InitImpl(wgpu::Device &device) -> void override;
-  auto ComputeImpl(wgpu::CommandEncoder &e, wgpu::Queue &q, Engine& engine) -> void override;
+  protected:
+    auto getResultImpl() -> const wgpu::Texture & override;
+    auto InitImpl(wgpu::Device &device) -> void override;
+    auto ComputeImpl(wgpu::CommandEncoder &e, wgpu::Queue &q, Engine &engine) -> void override;
 };
 
 } // namespace wglib::compute

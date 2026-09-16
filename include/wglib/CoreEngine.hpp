@@ -3,8 +3,6 @@
 #include "GLFW/glfw3.h"
 #include "WindowManager.hpp"
 #include "compute/ComputeEngine.hpp"
-#include <wglib/compute/ComputeLayer.hpp>
-#include <wglib/render_layer/RenderLayer.hpp>
 #include <concepts>
 #include <cstddef>
 #include <memory>
@@ -12,6 +10,8 @@
 #include <string_view>
 #include <utility>
 #include <webgpu/webgpu_cpp.h>
+#include <wglib/compute/ComputeLayer.hpp>
+#include <wglib/render_layer/RenderLayer.hpp>
 
 #include "CoreRenderer.hpp"
 
@@ -80,7 +80,7 @@ class Engine
 
     auto Input() -> const InputManager &;
 
-    auto GetDevice() -> const wgpu::Device&;
+    auto GetDevice() -> const wgpu::Device &;
 
     auto GetWindowSize() -> glm::u32vec2;
 };

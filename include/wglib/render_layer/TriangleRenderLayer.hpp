@@ -1,8 +1,8 @@
 
 #pragma once
+#include "webgpu/webgpu_cpp.h"
 #include <wglib/render_layer/RenderLayer.hpp>
 #include <wglib/render_layer/Vertex.hpp>
-#include "webgpu/webgpu_cpp.h"
 namespace wglib::render_layers
 {
 class TriangleRenderLayer : public RenderLayer

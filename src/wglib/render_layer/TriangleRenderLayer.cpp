@@ -1,7 +1,7 @@
 #include "TriangleRenderLayer.hpp"
+#include "webgpu/webgpu_cpp.h"
 #include <wglib/CoreUtil.hpp>
 #include <wglib/render_layer/Vertex.hpp>
-#include "webgpu/webgpu_cpp.h"
 
 namespace wglib::render_layers
 {

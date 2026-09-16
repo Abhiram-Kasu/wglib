@@ -1,14 +1,14 @@
 #include "ParticleSimulation.hpp"
 #include "glm/ext/vector_float2.hpp"
-#include <wglib/CoreEngine.hpp>
-#include <wglib/CoreInput.hpp>
-#include <wglib/CoreUtil.hpp>
 #include "webgpu/webgpu_cpp.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <utility>
 #include <vector>
+#include <wglib/CoreEngine.hpp>
+#include <wglib/CoreInput.hpp>
+#include <wglib/CoreUtil.hpp>
 
 namespace wglib::compute
 {
@@ -99,9 +99,8 @@ auto ParticleSimulationLayer::InitImpl(wgpu::Device &device) -> void
     m_drawTexture = device.CreateTexture(&textureDesc);
 
     const wgpu::ComputePipelineDescriptor desc{
-        .compute = {.module =
-                        util::createShaderModuleFromFile(
-                            util::shaderPath("ParticleSimulation/particle.wgsl"), device)}};
+        .compute = {
+            .module = util::createShaderModuleFromFile(util::shaderPath("ParticleSimulation/particle.wgsl"), device)}};
     m_computePipeline = device.CreateComputePipeline(&desc);
     createAndSetBindGroups(device);
 

@@ -1,129 +1,122 @@
 #include "ConwaysGameOfLife.hpp"
-#include <wglib/CoreUtil.hpp>
 #include "webgpu/webgpu_cpp.h"
 #include <cstddef>
 #include <cstdlib>
 #include <utility>
+#include <wglib/CoreUtil.hpp>
 
-namespace wglib::compute {
-ConwaysGameOfLifeComputeLayer::ConwaysGameOfLifeComputeLayer(glm::vec2 size)
-    : m_size(size) {
-  // TODO remove
-  util::log("Constructed ");
-  m_initalData.reserve(m_size.x * m_size.y);
-  for (auto i{0uz}; i < m_size.x * m_size.y; ++i) {
-    m_initalData.push_back(rand() % 2);
-  }
+namespace wglib::compute
+{
+ConwaysGameOfLifeComputeLayer::ConwaysGameOfLifeComputeLayer(glm::vec2 size) : m_size(size)
+{
+    // TODO remove
+    util::log("Constructed ");
+    m_initalData.reserve(m_size.x * m_size.y);
+    for (auto i{0uz}; i < m_size.x * m_size.y; ++i)
+    {
+        m_initalData.push_back(rand() % 2);
+    }
 }
 
-auto ConwaysGameOfLifeComputeLayer::InitImpl(wgpu::Device &device) -> void {
+auto ConwaysGameOfLifeComputeLayer::InitImpl(wgpu::Device &device) -> void
+{
 
-  if (not m_init) {
-
-    m_firstBuffer = util::createBuffer < uint32_t,
-    wgpu::BufferUsage::CopySrc |
-        wgpu::BufferUsage::Storage > (device, m_size.x * m_size.y, true);
-
-    m_firstBuffer.WriteMappedRange(0, m_initalData.data(),
-                                   m_initalData.size() * sizeof(uint32_t));
-
-    m_firstBuffer.Unmap();
-
-    m_secondBuffer = util::createBuffer < uint32_t,
-    wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::CopySrc |
-        wgpu::BufferUsage::Storage > (device, m_size.x * m_size.y);
-
-    m_currBufferPointer = &m_firstBuffer;
-    m_secBufferPointer = &m_secondBuffer;
-
-    m_uniformBuffer = util::createBuffer < Uniform,
-    wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Uniform > (device, 1, true);
+    if (not m_init)
     {
-      Uniform uniform{static_cast<uint32_t>(m_size.x),
-                      static_cast<uint32_t>(m_size.y)};
-      m_uniformBuffer.WriteMappedRange(0, &uniform, sizeof(Uniform));
-      m_uniformBuffer.Unmap();
+
+        m_firstBuffer = util::createBuffer<uint32_t, wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Storage>(
+            device, m_size.x * m_size.y, true);
+
+        m_firstBuffer.WriteMappedRange(0, m_initalData.data(), m_initalData.size() * sizeof(uint32_t));
+
+        m_firstBuffer.Unmap();
+
+        m_secondBuffer = util::createBuffer<uint32_t, wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::CopySrc |
+                                                          wgpu::BufferUsage::Storage>(device, m_size.x * m_size.y);
+
+        m_currBufferPointer = &m_firstBuffer;
+        m_secBufferPointer = &m_secondBuffer;
+
+        m_uniformBuffer =
+            util::createBuffer<Uniform, wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::Uniform>(device, 1, true);
+        {
+            Uniform uniform{static_cast<uint32_t>(m_size.x), static_cast<uint32_t>(m_size.y)};
+            m_uniformBuffer.WriteMappedRange(0, &uniform, sizeof(Uniform));
+            m_uniformBuffer.Unmap();
+        }
+
+        // Create texture
+        const wgpu::TextureDescriptor texDesc{
+            .label = "ConwaysGameOfLifeTexture",
+            .usage = wgpu::TextureUsage::CopyDst | wgpu::TextureUsage::CopySrc | wgpu::TextureUsage::TextureBinding |
+                     wgpu::TextureUsage::StorageBinding,
+            .dimension = wgpu::TextureDimension::e2D,
+            .size = {static_cast<uint32_t>(m_size.x), static_cast<uint32_t>(m_size.y), 1},
+            .format = wgpu::TextureFormat::RGBA8Unorm,
+            .mipLevelCount = 1,
+            .sampleCount = 1,
+            .viewFormatCount = 0,
+            .viewFormats = nullptr};
+        m_texture = device.CreateTexture(&texDesc);
+        m_textureView = m_texture.CreateView();
+
+        // Set up pipeline and shaderModule
+
+        wgpu::ComputePipelineDescriptor desc{
+            .compute = {.module = util::createShaderModuleFromFile(util::shaderPath("ConwaysGameOfLife/compute.wgsl"),
+                                                                   device)}};
+        m_computePipeline = device.CreateComputePipeline(&desc);
+        m_init = true;
     }
 
-    // Create texture
-    const wgpu::TextureDescriptor texDesc{
-        .label = "ConwaysGameOfLifeTexture",
-        .usage = wgpu::TextureUsage::CopyDst | wgpu::TextureUsage::CopySrc |
-                 wgpu::TextureUsage::TextureBinding |
-                 wgpu::TextureUsage::StorageBinding,
-        .dimension = wgpu::TextureDimension::e2D,
-        .size = {static_cast<uint32_t>(m_size.x),
-                 static_cast<uint32_t>(m_size.y), 1},
-        .format = wgpu::TextureFormat::RGBA8Unorm,
-        .mipLevelCount = 1,
-        .sampleCount = 1,
-        .viewFormatCount = 0,
-        .viewFormats = nullptr};
-    m_texture = device.CreateTexture(&texDesc);
-    m_textureView = m_texture.CreateView();
+    {
+        wgpu::BindGroupEntry entries[4]{{.binding = 0, .buffer = m_firstBuffer},
+                                        {.binding = 1, .buffer = m_secondBuffer},
+                                        {.binding = 2, .textureView = m_textureView},
+                                        {.binding = 3, .buffer = m_uniformBuffer}};
+        wgpu::BindGroupDescriptor desc{
+            .layout = m_computePipeline.GetBindGroupLayout(0), .entryCount = 4, .entries = entries};
+        m_bindGroups[0] = device.CreateBindGroup(&desc);
+    }
 
-    // Set up pipeline and shaderModule
+    {
+        wgpu::BindGroupEntry entries[4]{{.binding = 0, .buffer = m_secondBuffer},
+                                        {.binding = 1, .buffer = m_firstBuffer},
+                                        {.binding = 2, .textureView = m_textureView},
+                                        {.binding = 3, .buffer = m_uniformBuffer}};
+        wgpu::BindGroupDescriptor desc{
+            .layout = m_computePipeline.GetBindGroupLayout(0), .entryCount = 4, .entries = entries};
+        m_bindGroups[1] = device.CreateBindGroup(&desc);
+    }
 
-    wgpu::ComputePipelineDescriptor desc{
-        .compute = {
-            .module = util::createShaderModuleFromFile(
-                util::shaderPath("ConwaysGameOfLife/compute.wgsl"), device)}};
-    m_computePipeline = device.CreateComputePipeline(&desc);
-    m_init = true;
-  }
-
-  {
-    wgpu::BindGroupEntry entries[4]{
-        {.binding = 0, .buffer = m_firstBuffer},
-        {.binding = 1, .buffer = m_secondBuffer},
-        {.binding = 2, .textureView = m_textureView},
-        {.binding = 3, .buffer = m_uniformBuffer}};
-    wgpu::BindGroupDescriptor desc{.layout =
-                                       m_computePipeline.GetBindGroupLayout(0),
-                                   .entryCount = 4,
-                                   .entries = entries};
-    m_bindGroups[0] = device.CreateBindGroup(&desc);
-  }
-
-  {
-    wgpu::BindGroupEntry entries[4]{
-        {.binding = 0, .buffer = m_secondBuffer},
-        {.binding = 1, .buffer = m_firstBuffer},
-        {.binding = 2, .textureView = m_textureView},
-        {.binding = 3, .buffer = m_uniformBuffer}};
-    wgpu::BindGroupDescriptor desc{.layout =
-                                       m_computePipeline.GetBindGroupLayout(0),
-                                   .entryCount = 4,
-                                   .entries = entries};
-    m_bindGroups[1] = device.CreateBindGroup(&desc);
-  }
-
-  m_bindGroupIndex = 0;
+    m_bindGroupIndex = 0;
 } // namespace wglib::compute::example_layers
 
-auto ConwaysGameOfLifeComputeLayer::ComputeImpl(wgpu::CommandEncoder &encoder,
-                                                wgpu::Queue &queue, Engine& engine) -> void {
+auto ConwaysGameOfLifeComputeLayer::ComputeImpl(wgpu::CommandEncoder &encoder, wgpu::Queue &queue, Engine &engine)
+    -> void
+{
 
-  auto computePass = encoder.BeginComputePass();
-  computePass.SetPipeline(m_computePipeline);
-  computePass.SetBindGroup(0, m_bindGroups[m_bindGroupIndex]);
+    auto computePass = encoder.BeginComputePass();
+    computePass.SetPipeline(m_computePipeline);
+    computePass.SetBindGroup(0, m_bindGroups[m_bindGroupIndex]);
 
-  computePass.DispatchWorkgroups(
-      util::divCeil(static_cast<size_t>(m_size.x), 8uz),
-      util::divCeil(static_cast<size_t>(m_size.y), 8uz));
-  computePass.End();
-  const auto commandBuffer = encoder.Finish();
-  queue.Submit(1, &commandBuffer);
-  Swap();
-  m_bindGroupIndex ^= 1;
+    computePass.DispatchWorkgroups(util::divCeil(static_cast<size_t>(m_size.x), 8uz),
+                                   util::divCeil(static_cast<size_t>(m_size.y), 8uz));
+    computePass.End();
+    const auto commandBuffer = encoder.Finish();
+    queue.Submit(1, &commandBuffer);
+    Swap();
+    m_bindGroupIndex ^= 1;
 }
 
-auto ConwaysGameOfLifeComputeLayer::getResultImpl() -> const wgpu::Texture & {
-  return m_texture;
+auto ConwaysGameOfLifeComputeLayer::getResultImpl() -> const wgpu::Texture &
+{
+    return m_texture;
 }
 
-auto ConwaysGameOfLifeComputeLayer::Swap() -> void {
-  std::swap(m_currBufferPointer, m_secBufferPointer);
+auto ConwaysGameOfLifeComputeLayer::Swap() -> void
+{
+    std::swap(m_currBufferPointer, m_secBufferPointer);
 }
 
 } // namespace wglib::compute

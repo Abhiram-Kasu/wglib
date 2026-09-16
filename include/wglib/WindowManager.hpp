@@ -51,7 +51,6 @@ class WindowManager
     auto IsAspectLocked() const -> bool;
 
   private:
-
     static auto onClick(int, int, int) -> void;
     auto onMouseMove() -> void;
 

@@ -48,6 +48,16 @@ if(WGLIB_FETCH_DEPENDENCIES)
         GIT_TAG 0af55ccecd98d4e5a8d1fad7de25ba429d60e863
     )
     FetchContent_MakeAvailable(glm)
+
+    # Fetch FreeType
+    # # Suppress CMake error for FreeType's older cmake_minimum_required
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+    FetchContent_Declare(
+        freetype
+        GIT_REPOSITORY https://github.com/freetype/freetype.git
+        GIT_TAG VER-2-13-2 # You can update this to the latest stable tag
+    )
+    FetchContent_MakeAvailable(freetype)
 endif()
 
 # Dawn is kept as a pinned submodule so native and WebAssembly builds use the
@@ -189,14 +199,14 @@ target_include_directories(wglib
 )
 
 if(EMSCRIPTEN)
-    target_link_libraries(wglib PRIVATE emdawnwebgpu_cpp)
+    target_link_libraries(wglib PRIVATE emdawnwebgpu_cpp freetype)
 elseif(WGLIB_EFFECTIVE_LIBRARY_TYPE STREQUAL "STATIC")
     target_link_libraries(wglib PRIVATE
-        "$<BUILD_INTERFACE:dawn::webgpu_dawn;dawn::dawn_glfw;glfw>"
+        "$<BUILD_INTERFACE:dawn::webgpu_dawn;dawn::dawn_glfw;glfw;freetype>"
         "$<INSTALL_INTERFACE:${WGLIB_STATIC_INSTALL_LINK_LIBRARIES}>"
     )
 else()
-    target_link_libraries(wglib PRIVATE dawn::webgpu_dawn dawn::dawn_glfw glfw)
+    target_link_libraries(wglib PRIVATE dawn::webgpu_dawn dawn::dawn_glfw glfw freetype)
 endif()
 
 if(DEFINED glm_SOURCE_DIR)
@@ -242,6 +252,7 @@ if(WGLIB_BUILD_EXAMPLES)
             "-sTEXTDECODER=2"
             "--preload-file=${CMAKE_CURRENT_SOURCE_DIR}/shaders@/src/shaders"
             "--shell-file=${CMAKE_CURRENT_SOURCE_DIR}/shell.html"
+            "-sUSE_FREETYPE=1" # Added for Emscripten FreeType support
         )
     endif()
 

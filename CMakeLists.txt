@@ -41,6 +41,11 @@ if(EMSCRIPTEN AND NOT CMAKE_CXX_FLAGS MATCHES "(^| )-std=")
         "Flags passed to the C++ compiler" FORCE)
 endif()
 
+if(EMSCRIPTEN)
+    # Restore the EMSCRIPTEN macro that gets stripped in strict C++20/C++23 modes
+    add_compile_definitions(EMSCRIPTEN=1)
+endif()
+
 if(WGLIB_FETCH_DEPENDENCIES)
     FetchContent_Declare(
         glm
@@ -50,7 +55,7 @@ if(WGLIB_FETCH_DEPENDENCIES)
     FetchContent_MakeAvailable(glm)
 
     # Fetch FreeType
-    # # Suppress CMake error for FreeType's older cmake_minimum_required
+    # Suppress CMake error for FreeType's older cmake_minimum_required
     set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
     FetchContent_Declare(
         freetype

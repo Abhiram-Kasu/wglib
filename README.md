@@ -1,5 +1,5 @@
 # wglib
-
+See Live WASM project [here](https://syrup.abhiram-kasu.workers.dev/r/wglib) (click through the numbers at the top)
 wglib is a C++23 library for building 2D graphics and GPU-compute applications with WebGPU. The same public API can target a native desktop window or WebAssembly in a browser.
 
 The project is distributed as a reusable CMake library. Native builds produce a shared library by default; static native builds and WebAssembly builds are also supported.

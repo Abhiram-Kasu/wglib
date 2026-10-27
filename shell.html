@@ -36,6 +36,13 @@
                 flex-wrap: wrap;
             }
 
+            #analytics-privacy {
+                order: 1;
+                margin-left: auto;
+                color: #888;
+                font-size: 11px;
+            }
+
             #topbar label {
                 color: #888;
                 font-size: 11px;
@@ -105,11 +112,80 @@
         <div id="topbar">
             <label>mode</label>
             <!-- buttons injected by JS -->
+            <a id="analytics-privacy"
+               href="https://syrup.abhiram-kasu.workers.dev/privacy"
+               target="_blank" rel="noopener noreferrer">Usage analytics</a>
         </div>
         <div id="viewport">
             <canvas id="canvas"></canvas>
         </div>
         <div id="status">Loading...</div>
+
+        <script id="syrup-telemetry">
+            // Report once per document load, independently of Wasm initialization.
+            // Only the production site reports; local builds and forks stay local.
+            (async function reportLanding() {
+                if (location.origin !== "https://abhiram-kasu.github.io") return;
+
+                const webgpu = {
+                    supported: Boolean(navigator.gpu),
+                    status: "unsupported",
+                };
+                if (navigator.gpu) {
+                    let adapterTimeout;
+                    try {
+                        const adapter = await Promise.race([
+                            navigator.gpu.requestAdapter(),
+                            new Promise((_, reject) => {
+                                adapterTimeout = setTimeout(
+                                    () => reject(new Error("adapter-timeout")),
+                                    2000,
+                                );
+                            }),
+                        ]);
+                        webgpu.status = adapter ? "available" : "adapter-unavailable";
+                        if (adapter) {
+                            const info = adapter.info;
+                            webgpu.vendor = info?.vendor || null;
+                            webgpu.architecture = info?.architecture || null;
+                            webgpu.description = info?.description || null;
+                            webgpu.limits = {
+                                maxBufferSize: adapter.limits.maxBufferSize,
+                                maxStorageBufferBindingSize:
+                                    adapter.limits.maxStorageBufferBindingSize,
+                                maxComputeInvocationsPerWorkgroup:
+                                    adapter.limits.maxComputeInvocationsPerWorkgroup,
+                            };
+                        }
+                    } catch (error) {
+                        webgpu.status = error?.message === "adapter-timeout"
+                            ? "timeout" : "unavailable";
+                    } finally {
+                        clearTimeout(adapterTimeout);
+                    }
+                }
+
+                const controller = new AbortController();
+                const requestTimeout = setTimeout(() => controller.abort(), 5000);
+                try {
+                    await fetch("https://syrup.abhiram-kasu.workers.dev/events/wglib", {
+                        method: "POST",
+                        credentials: "omit",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            event: "page_view",
+                            data: { path: location.pathname, webgpu },
+                        }),
+                        keepalive: true,
+                        signal: controller.signal,
+                    });
+                } finally {
+                    clearTimeout(requestTimeout);
+                }
+            })().catch(() => {
+                // Telemetry failure must not affect the demo or its status UI.
+            });
+        </script>
 
         <script type="text/javascript">
             if (typeof TextDecoder !== "undefined") {
